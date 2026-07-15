@@ -26,9 +26,24 @@
     box-shadow:0 1px 2px rgba(30,41,59,.06);transition:.15s}
   .navbtn:hover:not(:disabled){background:var(--gold);color:#fff;border-color:var(--gold)}
   .navbtn:disabled{cursor:default;opacity:.3}
-  .dbox{min-width:150px;text-align:center}
-  .dbox .d{font-size:20px;font-weight:700}
+  .dbox{position:relative;min-width:150px;text-align:center;cursor:pointer;user-select:none;
+    border-radius:9px;padding:3px 10px;transition:background .15s}
+  .dbox:hover{background:#eef1f7}
+  .dbox.open{background:#eef1f7}
+  .dbox .d{font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+  .dbox .caret{font-size:12px;color:var(--gold);transition:transform .2s}
+  .dbox.open .caret{transform:rotate(180deg)}
   .dbox .w{color:var(--muted);font-size:13px}
+  .wkmenu{position:absolute;top:calc(100% + 8px);right:0;z-index:60;background:#fff;border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 10px 28px rgba(30,41,59,.16);padding:6px;min-width:220px;max-height:340px;
+    overflow:auto;display:none;text-align:left}
+  .wkmenu.show{display:block}
+  .wkmenu .mhd{font-size:11px;font-weight:700;color:var(--muted);padding:6px 10px 4px}
+  .wkitem{padding:8px 11px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+  .wkitem:hover{background:#f2f5fa}
+  .wkitem.active{background:#fff4e0}
+  .wkitem .wi1{font-size:13.5px;font-weight:700}
+  .wkitem .wi2{font-size:11px;color:var(--muted)}
 
   .warnbar{background:#fff4e5;border:1px solid #f6c988;color:#8a5a12;border-radius:10px;
     padding:11px 15px;margin-bottom:18px;font-size:13px;font-weight:600;display:none}
@@ -120,7 +135,11 @@
     <div class="date">
       <div class="dnav">
         <button id="prevBtn" class="navbtn" title="지난주 보기">&#8249;</button>
-        <div class="dbox"><div class="d" id="dBig">—</div><div class="w" id="dSub"></div></div>
+        <div class="dbox" id="dateBox" title="주차 선택">
+          <div class="d"><span id="dBig">—</span><span class="caret">&#9662;</span></div>
+          <div class="w" id="dSub"></div>
+          <div class="wkmenu" id="wkMenu"></div>
+        </div>
         <button id="nextBtn" class="navbtn" title="다음주 보기">&#8250;</button>
       </div>
     </div>
@@ -292,8 +311,30 @@ async function goto(i){
   render(cache[tab]);
   updateArrows();
 }
-$('prevBtn').onclick = ()=>goto(cur+1);  // 왼쪽 = 지난주(더 오래된)
-$('nextBtn').onclick = ()=>goto(cur-1);  // 오른쪽 = 다음주(더 최신)
+$('prevBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur+1); };  // 왼쪽 = 지난주(더 오래된)
+$('nextBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur-1); };  // 오른쪽 = 다음주(더 최신)
+
+// 날짜 클릭 → 전체 주차 드롭다운
+function buildMenu(){
+  const m = $('wkMenu');
+  m.innerHTML = '<div class="mhd">주차 선택</div>';
+  manifest.forEach((w,i)=>{
+    const el = document.createElement('div');
+    el.className = 'wkitem' + (i===cur ? ' active' : '');
+    el.innerHTML = `<span class="wi1">${w.date_big}</span><span class="wi2">${w.date_sub||''}</span>`;
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); closeMenu(); goto(i); });
+    m.appendChild(el);
+  });
+}
+function openMenu(){ buildMenu(); $('wkMenu').classList.add('show'); $('dateBox').classList.add('open'); }
+function closeMenu(){ $('wkMenu').classList.remove('show'); $('dateBox').classList.remove('open'); }
+$('dateBox').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  $('wkMenu').classList.contains('show') ? closeMenu() : openMenu();
+});
+$('wkMenu').addEventListener('click', (e)=> e.stopPropagation());
+document.addEventListener('click', ()=> closeMenu());
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
 
 (async ()=>{
   try{
