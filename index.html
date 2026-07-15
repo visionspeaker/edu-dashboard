@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>교육부서 현황 대시보드 · 2026. 7. 12</title>
+<title>교육부서 현황 대시보드</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
@@ -20,35 +20,41 @@
   header.top h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
   header.top h1 span{color:var(--gold)}
   header.top .sub{color:var(--muted);font-size:14px;margin-top:6px}
-  header.top .date{text-align:right}
-  header.top .date .d{font-size:20px;font-weight:700}
-  header.top .date .w{color:var(--muted);font-size:13px}
+  .dnav{display:flex;align-items:center;gap:10px}
+  .navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;
+    color:var(--gold);font-size:20px;font-weight:800;cursor:pointer;line-height:1;
+    box-shadow:0 1px 2px rgba(30,41,59,.06);transition:.15s}
+  .navbtn:hover:not(:disabled){background:var(--gold);color:#fff;border-color:var(--gold)}
+  .navbtn:disabled{cursor:default;opacity:.3}
+  .dbox{min-width:150px;text-align:center}
+  .dbox .d{font-size:20px;font-weight:700}
+  .dbox .w{color:var(--muted);font-size:13px}
 
   .warnbar{background:#fff4e5;border:1px solid #f6c988;color:#8a5a12;border-radius:10px;
     padding:11px 15px;margin-bottom:18px;font-size:13px;font-weight:600;display:none}
   .warnbar.show{display:block}
   .warnbar b{color:#c2410c}
 
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
   .summary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:26px}
   .kpi{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
-    border-radius:14px;padding:16px 16px 14px;position:relative;overflow:hidden;
-    box-shadow:0 1px 3px rgba(30,41,59,.06)}
+    border-radius:14px;padding:16px 16px 14px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(30,41,59,.06)}
   .kpi .lbl{color:var(--muted);font-size:12.5px;font-weight:600}
   .kpi .val{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-1px}
   .kpi .val small{font-size:14px;font-weight:600;color:var(--muted);margin-left:3px}
   .kpi.hl .val{color:var(--gold)}
   .kpi .bar{position:absolute;left:0;top:0;height:4px;width:100%;background:var(--gold);opacity:.85}
 
-  .section-title{font-size:15px;font-weight:700;color:var(--muted);margin:6px 0 14px;
-    display:flex;align-items:center;gap:8px}
+  .section-title{font-size:15px;font-weight:700;color:var(--muted);margin:6px 0 14px;display:flex;align-items:center;gap:8px}
   .section-title::before{content:"";width:4px;height:16px;background:var(--gold);border-radius:2px}
 
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:30px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
     display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(30,41,59,.06)}
   .card.unwritten{background:repeating-linear-gradient(135deg,#fbfcfe,#fbfcfe 12px,#f5f7fb 12px,#f5f7fb 24px)}
-  .card .hd{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
-    border-bottom:1px solid var(--line)}
+  .card .hd{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
   .card .hd .name{font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
   .card .hd .dot{width:12px;height:12px;border-radius:50%}
   .card .hd .rate{font-size:15px;font-weight:700}
@@ -60,7 +66,6 @@
   .chartbox .ctr{position:absolute;text-align:center}
   .chartbox .ctr .p{font-size:22px;font-weight:800}
   .chartbox .ctr .t{font-size:11px;color:var(--muted)}
-
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start}
   .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center}
   .stat .n{font-size:20px;font-weight:800;line-height:1.1}
@@ -71,9 +76,7 @@
   .stat.jang .n{color:var(--bad)}
   .stat.new .n{color:var(--gold)}
   .stat.tea .n{color:#3f76c4}
-
-  .meta{grid-column:1/3;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;
-    display:grid;grid-template-columns:1fr;gap:8px;font-size:13px}
+  .meta{grid-column:1/3;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;display:grid;grid-template-columns:1fr;gap:8px;font-size:13px}
   .meta .row{display:flex;gap:8px}
   .meta .row .mk{color:var(--muted);min-width:44px;font-weight:600}
   .meta .row .mv{flex:1}
@@ -81,8 +84,7 @@
   .fin b{color:var(--txt);font-weight:700}
 
   .btm{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px;align-items:stretch}
-  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;
-    box-shadow:0 1px 4px rgba(30,41,59,.06);display:flex;flex-direction:column}
+  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,41,59,.06);display:flex;flex-direction:column}
   .panelbox h3{font-size:15px;font-weight:700;margin-bottom:14px}
   .cmpchart{flex:1;min-height:230px}
   .absgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
@@ -97,8 +99,7 @@
   .notes h3{font-size:15px;font-weight:700;margin-bottom:14px}
   .noteGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .noteDept{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .noteDept .nhd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;
-    padding-bottom:8px;margin-bottom:9px;border-bottom:1px solid var(--line)}
+  .noteDept .nhd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;padding-bottom:8px;margin-bottom:9px;border-bottom:1px solid var(--line)}
   .noteDept .nhd .dot{width:10px;height:10px;border-radius:50%}
   .noteDept ul{list-style:none;display:flex;flex-direction:column;gap:8px}
   .noteDept li{font-size:12.5px;line-height:1.45;padding-left:14px;position:relative;color:#334155}
@@ -111,186 +112,198 @@
 </head>
 <body>
 <div class="wrap">
-
   <header class="top">
     <div>
       <h1>교육부서 주간 <span>현황 대시보드</span></h1>
       <div class="sub">송탄영광교회 교육부서 주간 사역보고서 · 담임목사님 보고용</div>
     </div>
     <div class="date">
-      <div class="d">2026. 7. 12</div>
-      <div class="w">주일 · 2026년 7월 2주차</div>
+      <div class="dnav">
+        <button id="prevBtn" class="navbtn" title="지난주 보기">&#8249;</button>
+        <div class="dbox"><div class="d" id="dBig">—</div><div class="w" id="dSub"></div></div>
+        <button id="nextBtn" class="navbtn" title="다음주 보기">&#8250;</button>
+      </div>
     </div>
   </header>
 
   <div class="warnbar" id="warnbar"></div>
 
   <div class="summary">
-    <div class="kpi"><div class="bar"></div><div class="lbl">전체 재적</div><div class="val">155<small>명</small></div></div>
-    <div class="kpi"><div class="bar" style="background:var(--good)"></div><div class="lbl">전체 출석</div><div class="val">118<small>명</small></div></div>
-    <div class="kpi hl"><div class="bar"></div><div class="lbl">전체 출석률</div><div class="val">76.1<small>%</small></div></div>
-    <div class="kpi"><div class="bar" style="background:var(--warn)"></div><div class="lbl">결석 / 장기결석</div><div class="val">37<small>·24명</small></div></div>
-    <div class="kpi"><div class="bar" style="background:var(--gold)"></div><div class="lbl">새친구</div><div class="val">4<small>명</small></div></div>
-    <div class="kpi"><div class="bar" style="background:#7fd1c0"></div><div class="lbl">금주 헌금</div><div class="val">152<small>만원</small></div></div>
+    <div class="kpi"><div class="bar"></div><div class="lbl">전체 재적</div><div class="val"><span id="kJae">–</span><small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--good)"></div><div class="lbl">전체 출석</div><div class="val"><span id="kChul">–</span><small>명</small></div></div>
+    <div class="kpi hl"><div class="bar"></div><div class="lbl">전체 출석률</div><div class="val"><span id="kRate">–</span><small>%</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--warn)"></div><div class="lbl">결석 / 장기결석</div><div class="val"><span id="kGyeol">–</span><small>·<span id="kJang">–</span>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--gold)"></div><div class="lbl">새친구</div><div class="val"><span id="kNew">–</span><small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:#7fd1c0"></div><div class="lbl">금주 헌금</div><div class="val"><span id="kMan">–</span><small>만원</small></div></div>
   </div>
 
   <div class="section-title">부서별 현황</div>
   <div class="grid" id="deptGrid"></div>
 
   <div class="btm">
-    <div class="panelbox">
-      <h3>부서별 출석률 비교</h3>
-      <div class="cmpchart"><canvas id="cmpChart"></canvas></div>
-    </div>
-    <div class="panelbox">
-      <h3>주차별 결석 인원</h3>
-      <div class="absgrid" id="absGrid"></div>
-    </div>
+    <div class="panelbox reveal"><h3>부서별 출석률 비교</h3><div class="cmpchart"><canvas id="cmpChart"></canvas></div></div>
+    <div class="panelbox reveal"><h3>주차별 결석 인원</h3><div class="absgrid" id="absGrid"></div></div>
   </div>
 
-  <div class="notes">
-    <h3>주요 사항 · 특이사항</h3>
-    <div class="noteGrid" id="noteGrid"></div>
-  </div>
+  <div class="notes reveal"><h3>주요 사항 · 특이사항</h3><div class="noteGrid" id="noteGrid"></div></div>
 
-  <footer>자료 출처: 교육부서 주간 사역보고서 스프레드시트 (260712 탭) · 생성일 2026.07.15</footer>
+  <footer id="foot">자료 불러오는 중…</footer>
 </div>
 
 <script>
-const depts = [{"name": "유치부", "hex": "#f59e42", "written": true, "jae": 16, "chul": 9, "gyeol": 6, "jang": 1, "neww": 0, "sermon": "하나님의 긍휼하심을 닮아갈 수 있어요!", "verse": "시편 25:6", "plan": "2학기 교재 시작 · 매주 공과(만들기) · 여름성경학교 준비/교사강습", "fin": {"gm": "58,000", "bal": "1,389,432"}, "rate": 56.2}, {"name": "유초등부", "hex": "#34c98b", "written": true, "jae": 36, "chul": 27, "gyeol": 7, "jang": 3, "neww": 1, "sermon": "나만 잘 살면 되는 걸까요?", "verse": "누가복음 10:30-37", "plan": "하나바이블 6과정 2학기 · 7단원 25과(개인주의) · 여름성경학교 준비", "fin": {"gm": "111,000", "bal": "1,822,892"}, "rate": 75.0}, {"name": "중고등부", "hex": "#4a90e2", "written": true, "jae": 43, "chul": 32, "gyeol": 5, "jang": 8, "neww": 2, "tea": 15, "sermon": "가볍게 여긴 자의 최후 (창26)", "verse": "창세기 25:19-34", "plan": "여름수련회 중보기도 · 7/12 전반기 성경읽기 시상 · 7/30~8/1 수련회(대전)", "fin": {"gm": "280,000", "bal": "1,167,499"}, "rate": 74.4}, {"name": "청년부", "hex": "#a06bf0", "written": true, "jae": 60, "chul": 50, "gyeol": 19, "jang": 12, "neww": 1, "sermon": "사람을 향하신 주님", "verse": "시편 8:1-9", "plan": "7/16~18 여름수련회 · 대심방/연합셀 · 새가족 심방", "fin": {"gm": "1,071,000", "bal": "21,035,473"}, "rate": 83.3}];
+let manifest = [], cur = 0, charts = [], io = null;
+const cache = {};
+const $ = id => document.getElementById(id);
 
-const grid = document.getElementById('deptGrid');
-depts.forEach((d,i)=>{
-  if(!d.written){
-    grid.insertAdjacentHTML('beforeend', `
-      <div class="card unwritten">
-        <div class="hd">
-          <div class="name"><span class="dot" style="background:#cbd5e1"></span>${d.name}</div>
-          <div class="rate" style="color:#94a3b8">미작성</div>
-        </div>
-        <div class="ubody"><div>📝 보고서 미작성</div><div class="u2">해당 부서 보고서가 아직 작성 완료되지 않았습니다.</div></div>
-      </div>`);
-    return;
-  }
-  const teaStat = d.tea!==undefined ? `<div class="stat tea"><div class="n">${d.tea}</div><div class="k">교사</div></div>` : `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>`;
-  const extraNew = d.tea!==undefined ? `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>` : "";
-  grid.insertAdjacentHTML('beforeend', `
-    <div class="card">
-      <div class="hd">
-        <div class="name"><span class="dot" style="background:${d.hex}"></span>${d.name}</div>
-        <div class="rate" style="color:${d.hex}">출석률 ${d.rate}%</div>
-      </div>
-      <div class="body">
-        <div class="chartbox">
-          <canvas id="c${i}"></canvas>
-          <div class="ctr"><div class="p" style="color:${d.hex}">${d.rate}%</div><div class="t">출석 ${d.chul}/${d.jae}</div></div>
-        </div>
-        <div class="stats">
-          <div class="stat jae"><div class="n">${d.jae}</div><div class="k">재적</div></div>
-          <div class="stat chul"><div class="n">${d.chul}</div><div class="k">출석</div></div>
-          <div class="stat gyeol"><div class="n">${d.gyeol}</div><div class="k">결석</div></div>
-          <div class="stat jang"><div class="n">${d.jang}</div><div class="k">장기결석</div></div>
-          ${teaStat}${extraNew}
-        </div>
-        <div class="meta">
-          <div class="row"><span class="mk">설교</span><span class="mv">${d.sermon} <span style="color:var(--muted)">(${d.verse})</span></span></div>
-          <div class="row"><span class="mk">사역</span><span class="mv">${d.plan}</span></div>
-          <div class="row"><span class="mk">재정</span><span class="mv"><span class="fin">금주헌금 <b>${d.fin.gm}</b>원 · 총잔액 <b>${d.fin.bal}</b>원</span></span></div>
-        </div>
-      </div>
-    </div>`);
-});
+async function jget(u){ const r = await fetch(u, {cache:'no-store'}); if(!r.ok) throw new Error('load fail '+u); return r.json(); }
 
-depts.forEach((d,i)=>{
-  if(!d.written) return;
-  new Chart(document.getElementById('c'+i),{
-    type:'doughnut',
-    data:{datasets:[{data:[d.chul, Math.max(d.jae-d.chul,0)], backgroundColor:[d.hex,'#e6eaf2'], borderWidth:0}]},
-    options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:600}}
-  });
-});
-
-const barLabelPlugin = {
-  id:'barLabel',
-  afterDatasetsDraw(chart){
-    const ctx = chart.ctx;
-    const meta = chart.getDatasetMeta(0);
-    meta.data.forEach((bar,i)=>{
-      const d = depts[i];
-      ctx.save();
-      ctx.font = '700 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      if(d.written){
-        ctx.fillStyle = d.hex;
-        ctx.fillText(d.chul + '명', bar.x, bar.y - 6);
-      }else{
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText('미작성', bar.x, chart.scales.y.getPixelForValue(0) - 6);
-      }
-      ctx.restore();
+// 화면에 들어오는 요소에 .in 을 붙여 서서히 나타나게 하고, 차트는 그 시점에 생성해 애니메이션이 스크롤과 함께 재생되게 한다.
+function setupObservers(makers){
+  if(io) io.disconnect();
+  io = new IntersectionObserver((ents)=>{
+    ents.forEach(en=>{
+      if(!en.isIntersecting) return;
+      const el = en.target;
+      el.classList.add('in');
+      const mk = makers.get(el);
+      if(mk){ charts.push(mk()); makers.delete(el); }
+      io.unobserve(el);
     });
-  }
-};
-
-new Chart(document.getElementById('cmpChart'),{
-  type:'bar',
-  data:{
-    labels:depts.map(d=>d.name),
-    datasets:[{data:depts.map(d=>d.written?d.rate:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44}]
-  },
-  options:{
-    maintainAspectRatio:false,
-    layout:{padding:{top:18}},
-    plugins:{
-      legend:{display:false},
-      tooltip:{callbacks:{label:c=>{const d=depts[c.dataIndex];return d.written?('출석률 '+d.rate+'% · 출석 '+d.chul+'명'):'보고서 미작성';}}}
-    },
-    scales:{
-      y:{beginAtZero:true, max:100, ticks:{color:'#64748b', callback:v=>v+'%'}, grid:{color:'#e2e7f0'}},
-      x:{ticks:{color:'#1e293b', font:{weight:'700'}}, grid:{display:false}}
-    }
-  },
-  plugins:[barLabelPlugin]
-});
-
-const abs = [{"name": "유치부", "w": [3, 2, 0, 1], "jang": 1, "written": true}, {"name": "유초등부", "w": [7, 0, 0, 0], "jang": 3, "written": true}, {"name": "중고등부", "w": [2, 3, 0, 0], "jang": 8, "written": true}, {"name": "청년부", "w": [0, 0, 0, 0], "jang": 12, "written": true}];
-const ag = document.getElementById('absGrid');
-abs.forEach(a=>{
-  if(a.written===false){
-    ag.insertAdjacentHTML('beforeend',`<div class="abscol uw"><div>${a.name}<br>보고서 미작성</div></div>`);
-    return;
-  }
-  ag.insertAdjacentHTML('beforeend',`
-    <div class="abscol">
-      <div class="t">${a.name}</div>
-      <div class="absline"><span>1주차</span><b>${a.w[0]}</b></div>
-      <div class="absline"><span>2주차</span><b>${a.w[1]}</b></div>
-      <div class="absline"><span>3주차</span><b>${a.w[2]}</b></div>
-      <div class="absline"><span>4주차</span><b>${a.w[3]}</b></div>
-      <div class="absline lt"><span>장기결석</span><b>${a.jang}</b></div>
-    </div>`);
-});
-
-const noteData = [{"name": "유치부", "hex": "#f59e42", "items": ["7월 2주차부터 2학기 교재 시작", "3~4주 여름성경학교 준비 / 교사 강습"], "written": true}, {"name": "유초등부", "hex": "#34c98b", "items": ["하나바이블 6과정 2학기 7단원 진행", "새친구 1명 등반"], "written": true}, {"name": "중고등부", "hex": "#4a90e2", "items": ["새친구 2명 : 이혜민, 앨런", "전반기 성경읽기 시상 8명 진행", "여름수련회 7/30(목)~8/1(토) 주바라기캠프(한남대) · 교사 포함 40명 가등록"], "written": true}, {"name": "청년부", "hex": "#a06bf0", "items": ["여름수련회 7/16(목)~18(토) · 참석 46명(전참·부분참 포함)", "새가족 홍인석 형제(오산·영어강사) 등록", "이상수 형제 셀 편성"], "written": true}];
-const ng = document.getElementById('noteGrid');
-noteData.forEach(d=>{
-  const items = (d.written===false)
-    ? `<li class="uw" style="--mk:#94a3b8">보고서 미작성</li>`
-    : d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("");
-  ng.insertAdjacentHTML('beforeend',`
-    <div class="noteDept">
-      <div class="nhd"><span class="dot" style="background:${d.hex}"></span><span style="color:${d.hex}">${d.name}</span></div>
-      <ul>${items}</ul>
-    </div>`);
-});
-
-const unwritten = [];
-if(unwritten.length){
-  const wb = document.getElementById('warnbar');
-  wb.classList.add('show');
-  wb.innerHTML = '⚠ 보고서 미작성 부서: <b>'+unwritten.join(', ')+'</b> · 상단 합계·출석률 비교 수치는 작성완료 부서 기준입니다.';
+  }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 }
+
+function render(week){
+  charts.forEach(c=>{ try{c.destroy();}catch(e){} }); charts = [];
+  const depts = week.depts.map(d=>Object.assign({}, d, {written: d.written!==false}));
+  depts.forEach(d=> d.rate = (d.written && d.jae) ? Math.round(d.chul/d.jae*1000)/10 : null);
+  const uset = new Set(depts.filter(d=>!d.written).map(d=>d.name));
+  const w = depts.filter(d=>d.written);
+  const sum = k => w.reduce((a,d)=>a+(+d[k]||0),0);
+  const tJae=sum('jae'), tChul=sum('chul'), tGyeol=sum('gyeol'), tJang=sum('jang'), tNew=sum('neww');
+  const tRate = tJae ? Math.round(tChul/tJae*1000)/10 : 0;
+  const won = w.reduce((a,d)=>a+(parseInt(String(d.fin.gm).replace(/[^0-9]/g,''))||0),0);
+  const man = Math.round(won/10000);
+
+  $('dBig').textContent = week.date_big;
+  $('dSub').textContent = week.date_sub;
+  document.title = '교육부서 현황 대시보드 · ' + week.date_big;
+  $('kJae').textContent=tJae; $('kChul').textContent=tChul; $('kRate').textContent=tRate;
+  $('kGyeol').textContent=tGyeol; $('kJang').textContent=tJang; $('kNew').textContent=tNew; $('kMan').textContent=man;
+
+  const unwritten = [...uset];
+  const wb = $('warnbar');
+  if(unwritten.length){ wb.classList.add('show'); wb.innerHTML = '⚠ 보고서 미작성 부서: <b>'+unwritten.join(', ')+'</b> · 상단 합계·출석률 비교 수치는 작성완료 부서 기준입니다.'; }
+  else { wb.classList.remove('show'); wb.innerHTML=''; }
+
+  const grid = $('deptGrid'); grid.innerHTML='';
+  depts.forEach((d,i)=>{
+    if(!d.written){
+      grid.insertAdjacentHTML('beforeend', `
+        <div class="card unwritten reveal">
+          <div class="hd"><div class="name"><span class="dot" style="background:#cbd5e1"></span>${d.name}</div><div class="rate" style="color:#94a3b8">미작성</div></div>
+          <div class="ubody"><div>📝 보고서 미작성</div><div class="u2">해당 부서 보고서가 아직 작성 완료되지 않았습니다.</div></div>
+        </div>`);
+      return;
+    }
+    const teaStat = d.tea!==undefined ? `<div class="stat tea"><div class="n">${d.tea}</div><div class="k">교사</div></div>` : `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>`;
+    const extraNew = d.tea!==undefined ? `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>` : "";
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="card reveal">
+        <div class="hd"><div class="name"><span class="dot" style="background:${d.hex}"></span>${d.name}</div><div class="rate" style="color:${d.hex}">출석률 ${d.rate}%</div></div>
+        <div class="body">
+          <div class="chartbox"><canvas id="c${i}"></canvas><div class="ctr"><div class="p" style="color:${d.hex}">${d.rate}%</div><div class="t">출석 ${d.chul}/${d.jae}</div></div></div>
+          <div class="stats">
+            <div class="stat jae"><div class="n">${d.jae}</div><div class="k">재적</div></div>
+            <div class="stat chul"><div class="n">${d.chul}</div><div class="k">출석</div></div>
+            <div class="stat gyeol"><div class="n">${d.gyeol}</div><div class="k">결석</div></div>
+            <div class="stat jang"><div class="n">${d.jang}</div><div class="k">장기결석</div></div>
+            ${teaStat}${extraNew}
+          </div>
+          <div class="meta">
+            <div class="row"><span class="mk">설교</span><span class="mv">${d.sermon} <span style="color:var(--muted)">(${d.verse})</span></span></div>
+            <div class="row"><span class="mk">사역</span><span class="mv">${d.plan}</span></div>
+            <div class="row"><span class="mk">재정</span><span class="mv"><span class="fin">금주헌금 <b>${d.fin.gm}</b>원 · 총잔액 <b>${d.fin.bal}</b>원</span></span></div>
+          </div>
+        </div>
+      </div>`);
+  });
+
+  // 차트는 화면에 들어올 때 생성되도록 maker 로 등록(스크롤 시 애니메이션 재생)
+  const makers = new Map();
+  depts.forEach((d,i)=>{
+    if(!d.written) return;
+    const host = $('c'+i).closest('.card');
+    makers.set(host, ()=> new Chart($('c'+i),{ type:'doughnut',
+      data:{datasets:[{data:[d.chul, Math.max(d.jae-d.chul,0)], backgroundColor:[d.hex,'#e6eaf2'], borderWidth:0}]},
+      options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{animateRotate:true,duration:900,easing:'easeOutCubic'}} }));
+  });
+
+  const barLabel = { id:'barLabel', afterDatasetsDraw(chart){
+    const ctx=chart.ctx, meta=chart.getDatasetMeta(0);
+    meta.data.forEach((bar,i)=>{ const d=depts[i]; ctx.save();
+      ctx.font='700 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      if(d.written){ ctx.fillStyle=d.hex; ctx.fillText(d.chul+'명', bar.x, bar.y-6); }
+      else { ctx.fillStyle='#94a3b8'; ctx.fillText('미작성', bar.x, chart.scales.y.getPixelForValue(0)-6); }
+      ctx.restore(); });
+  }};
+  const barHost = $('cmpChart').closest('.panelbox');
+  makers.set(barHost, ()=> new Chart($('cmpChart'),{ type:'bar',
+    data:{labels:depts.map(d=>d.name), datasets:[{data:depts.map(d=>d.written?d.rate:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44}]},
+    options:{maintainAspectRatio:false, layout:{padding:{top:18}},
+      animation:{duration:900,easing:'easeOutQuart',delay:(ctx)=> ctx.type==='data'? ctx.dataIndex*120 : 0},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>{const d=depts[c.dataIndex]; return d.written?('출석률 '+d.rate+'% · 출석 '+d.chul+'명'):'보고서 미작성';}}}},
+      scales:{y:{beginAtZero:true,max:100,ticks:{color:'#64748b',callback:v=>v+'%'},grid:{color:'#e2e7f0'}}, x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}}},
+    plugins:[barLabel] }));
+
+  setupObservers(makers);
+
+  const ag = $('absGrid'); ag.innerHTML='';
+  week.abs.forEach(a=>{
+    if(uset.has(a.name)){ ag.insertAdjacentHTML('beforeend', `<div class="abscol uw"><div>${a.name}<br>보고서 미작성</div></div>`); return; }
+    ag.insertAdjacentHTML('beforeend', `
+      <div class="abscol"><div class="t">${a.name}</div>
+        <div class="absline"><span>1주차</span><b>${a.w[0]}</b></div>
+        <div class="absline"><span>2주차</span><b>${a.w[1]}</b></div>
+        <div class="absline"><span>3주차</span><b>${a.w[2]}</b></div>
+        <div class="absline"><span>4주차</span><b>${a.w[3]}</b></div>
+        <div class="absline lt"><span>장기결석</span><b>${a.jang}</b></div>
+      </div>`);
+  });
+
+  const ng = $('noteGrid'); ng.innerHTML='';
+  week.notes.forEach(d=>{
+    const items = uset.has(d.name) ? `<li class="uw" style="--mk:#94a3b8">보고서 미작성</li>` : d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("");
+    ng.insertAdjacentHTML('beforeend', `<div class="noteDept"><div class="nhd"><span class="dot" style="background:${d.hex}"></span><span style="color:${d.hex}">${d.name}</span></div><ul>${items}</ul></div>`);
+  });
+
+  $('foot').textContent = '자료 출처: 교육부서 주간 사역보고서 스프레드시트 (' + week.tab + ' 탭) · 생성일 ' + week.gen_date;
+}
+
+function updateArrows(){
+  $('prevBtn').disabled = (cur >= manifest.length-1);
+  $('nextBtn').disabled = (cur <= 0);
+}
+async function goto(i){
+  if(i<0 || i>=manifest.length) return;
+  cur = i;
+  const tab = manifest[i].tab;
+  if(!cache[tab]) cache[tab] = await jget('week_'+tab+'.json');
+  render(cache[tab]);
+  updateArrows();
+}
+$('prevBtn').onclick = ()=>goto(cur+1);  // 왼쪽 = 지난주(더 오래된)
+$('nextBtn').onclick = ()=>goto(cur-1);  // 오른쪽 = 다음주(더 최신)
+
+(async ()=>{
+  try{
+    manifest = await jget('manifest.json');
+    manifest.sort((a,b)=> a.tab<b.tab?1:-1);  // 최신 먼저
+    await goto(0);
+  }catch(e){
+    $('foot').textContent = '데이터를 불러오지 못했습니다: ' + e.message;
+  }
+})();
 </script>
 </body>
 </html>
