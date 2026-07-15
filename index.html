@@ -15,11 +15,17 @@
   body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--txt);
     padding:28px 32px 48px;line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:1280px;margin:0 auto}
-  header.top{display:flex;align-items:flex-end;justify-content:space-between;
-    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  header.top{display:flex;align-items:center;justify-content:space-between;
+    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:20px;flex-wrap:wrap;gap:14px}
   header.top h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
   header.top h1 span{color:var(--gold)}
   header.top .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  .clock{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.4px;color:#334155;white-space:nowrap}
+  .hright{display:flex;align-items:center;gap:12px}
+  .reportbtn{display:inline-flex;align-items:center;gap:7px;background:#5eb045;color:#fff;font-size:13px;font-weight:700;
+    padding:9px 14px;border-radius:10px;text-decoration:none;box-shadow:0 1px 3px rgba(30,41,59,.1);white-space:nowrap;transition:background .15s}
+  .reportbtn:hover{background:#4e9a38}
+  .reportbtn svg{width:15px;height:15px}
   .dnav{display:flex;align-items:center;gap:10px}
   .navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;
     color:var(--gold);font-size:20px;font-weight:800;cursor:pointer;line-height:1;
@@ -134,15 +140,21 @@
       <h1>교육부서 주간 <span>현황 대시보드</span></h1>
       <div class="sub">송탄영광교회 교육부서 주간 사역보고서 · 담임목사님 보고용</div>
     </div>
-    <div class="date">
-      <div class="dnav">
-        <button id="prevBtn" class="navbtn" title="지난주 보기">&#8249;</button>
-        <div class="dbox" id="dateBox" title="주차 선택">
-          <div class="d"><span id="dBig">—</span><span class="caret">&#9662;</span></div>
-          <div class="w" id="dSub"></div>
-          <div class="wkmenu" id="wkMenu"></div>
+    <div class="clock" id="clock">—</div>
+    <div class="hright">
+      <a class="reportbtn" id="reportBtn" href="https://docs.google.com/spreadsheets/d/1rXRzno9pE_PYXHR6KX5Hm4FGtrPVVoRUJouxkNmhD5k/edit" target="_blank" rel="noopener" title="이 주차의 주간 사역보고서 시트 탭 열기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>주간 사역보고서
+      </a>
+      <div class="date">
+        <div class="dnav">
+          <button id="prevBtn" class="navbtn" title="지난주 보기">&#8249;</button>
+          <div class="dbox" id="dateBox" title="주차 선택">
+            <div class="d"><span id="dBig">—</span><span class="caret">&#9662;</span></div>
+            <div class="w" id="dSub"></div>
+            <div class="wkmenu" id="wkMenu"></div>
+          </div>
+          <button id="nextBtn" class="navbtn" title="다음주 보기">&#8250;</button>
         </div>
-        <button id="nextBtn" class="navbtn" title="다음주 보기">&#8250;</button>
       </div>
     </div>
   </header>
@@ -314,7 +326,17 @@ async function goto(i){
   if(!cache[tab]) cache[tab] = await jget('week_'+tab+'.json');
   render(cache[tab]);
   updateArrows();
+  const base='https://docs.google.com/spreadsheets/d/1rXRzno9pE_PYXHR6KX5Hm4FGtrPVVoRUJouxkNmhD5k';
+  const gid = manifest[i].gid;
+  $('reportBtn').href = gid ? (base+'/edit?gid='+gid+'#gid='+gid) : (base+'/edit');
 }
+
+function tickClock(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const el=$('clock'); if(!el) return;
+  el.textContent = d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+'. '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+tickClock(); setInterval(tickClock,1000);
 $('prevBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur+1); };  // 왼쪽 = 지난주(더 오래된)
 $('nextBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur-1); };  // 오른쪽 = 다음주(더 최신)
 
