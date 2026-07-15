@@ -16,13 +16,18 @@
     padding:28px 32px 48px;line-height:1.5;-webkit-font-smoothing:antialiased}
   .wrap{max-width:1280px;margin:0 auto}
   header.top{display:flex;align-items:flex-end;justify-content:space-between;
-    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:20px;flex-wrap:wrap;gap:12px}
   header.top h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
   header.top h1 span{color:var(--gold)}
   header.top .sub{color:var(--muted);font-size:14px;margin-top:6px}
   header.top .date{text-align:right}
   header.top .date .d{font-size:20px;font-weight:700}
   header.top .date .w{color:var(--muted);font-size:13px}
+
+  .warnbar{background:#fff4e5;border:1px solid #f6c988;color:#8a5a12;border-radius:10px;
+    padding:11px 15px;margin-bottom:18px;font-size:13px;font-weight:600;display:none}
+  .warnbar.show{display:block}
+  .warnbar b{color:#c2410c}
 
   .summary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:26px}
   .kpi{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
@@ -41,12 +46,16 @@
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:30px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
     display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .card.unwritten{background:repeating-linear-gradient(135deg,#fbfcfe,#fbfcfe 12px,#f5f7fb 12px,#f5f7fb 24px)}
   .card .hd{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
     border-bottom:1px solid var(--line)}
   .card .hd .name{font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
   .card .hd .dot{width:12px;height:12px;border-radius:50%}
   .card .hd .rate{font-size:15px;font-weight:700}
   .card .body{padding:16px 18px 18px;display:grid;grid-template-columns:130px 1fr;gap:16px}
+  .ubody{padding:40px 18px;text-align:center;color:#94a3b8;font-size:15px;font-weight:700;
+    display:flex;flex-direction:column;gap:6px;flex:1;justify-content:center}
+  .ubody .u2{font-size:12px;font-weight:600;color:#a9b4c6}
   .chartbox{position:relative;height:130px;display:flex;align-items:center;justify-content:center}
   .chartbox .ctr{position:absolute;text-align:center}
   .chartbox .ctr .p{font-size:22px;font-weight:800}
@@ -78,6 +87,7 @@
   .cmpchart{flex:1;min-height:230px}
   .absgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
   .abscol{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .abscol.uw{display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:700;min-height:120px;text-align:center}
   .abscol .t{font-size:12.5px;font-weight:700;margin-bottom:8px;text-align:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
   .absline{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);padding:2px 0}
   .absline b{color:var(--txt)}
@@ -93,6 +103,8 @@
   .noteDept ul{list-style:none;display:flex;flex-direction:column;gap:8px}
   .noteDept li{font-size:12.5px;line-height:1.45;padding-left:14px;position:relative;color:#334155}
   .noteDept li::before{content:"▪";position:absolute;left:0;top:0;color:var(--mk)}
+  .noteDept li.uw{color:#94a3b8;font-weight:600}
+  .noteDept li.uw::before{color:#94a3b8}
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
   @media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}.grid,.btm{grid-template-columns:1fr}.noteGrid{grid-template-columns:1fr 1fr}}
 </style>
@@ -110,6 +122,8 @@
       <div class="w">주일 · 2026년 7월 2주차</div>
     </div>
   </header>
+
+  <div class="warnbar" id="warnbar"></div>
 
   <div class="summary">
     <div class="kpi"><div class="bar"></div><div class="lbl">전체 재적</div><div class="val">155<small>명</small></div></div>
@@ -143,10 +157,21 @@
 </div>
 
 <script>
-const depts = [{"name": "유치부", "hex": "#f59e42", "jae": 16, "chul": 9, "gyeol": 6, "jang": 1, "neww": 0, "sermon": "하나님의 긍휼하심을 닮아갈 수 있어요!", "verse": "시편 25:6", "plan": "2학기 교재 시작 · 매주 공과(만들기) · 여름성경학교 준비/교사강습", "fin": {"gm": "58,000", "bal": "1,389,432"}, "rate": 56.2}, {"name": "유초등부", "hex": "#34c98b", "jae": 36, "chul": 27, "gyeol": 7, "jang": 3, "neww": 1, "sermon": "나만 잘 살면 되는 걸까요?", "verse": "누가복음 10:30-37", "plan": "하나바이블 6과정 2학기 · 7단원 25과(개인주의) · 여름성경학교 준비", "fin": {"gm": "111,000", "bal": "1,822,892"}, "rate": 75.0}, {"name": "중고등부", "hex": "#4a90e2", "jae": 43, "chul": 32, "gyeol": 5, "jang": 8, "neww": 2, "tea": 15, "sermon": "가볍게 여긴 자의 최후 (창26)", "verse": "창세기 25:19-34", "plan": "여름수련회 중보기도 · 7/12 전반기 성경읽기 시상 · 7/30~8/1 수련회(대전)", "fin": {"gm": "280,000", "bal": "1,167,499"}, "rate": 74.4}, {"name": "청년부", "hex": "#a06bf0", "jae": 60, "chul": 50, "gyeol": 19, "jang": 12, "neww": 1, "sermon": "사람을 향하신 주님", "verse": "시편 8:1-9", "plan": "7/16~18 여름수련회 · 대심방/연합셀 · 새가족 심방", "fin": {"gm": "1,071,000", "bal": "21,035,473"}, "rate": 83.3}];
+const depts = [{"name": "유치부", "hex": "#f59e42", "written": true, "jae": 16, "chul": 9, "gyeol": 6, "jang": 1, "neww": 0, "sermon": "하나님의 긍휼하심을 닮아갈 수 있어요!", "verse": "시편 25:6", "plan": "2학기 교재 시작 · 매주 공과(만들기) · 여름성경학교 준비/교사강습", "fin": {"gm": "58,000", "bal": "1,389,432"}, "rate": 56.2}, {"name": "유초등부", "hex": "#34c98b", "written": true, "jae": 36, "chul": 27, "gyeol": 7, "jang": 3, "neww": 1, "sermon": "나만 잘 살면 되는 걸까요?", "verse": "누가복음 10:30-37", "plan": "하나바이블 6과정 2학기 · 7단원 25과(개인주의) · 여름성경학교 준비", "fin": {"gm": "111,000", "bal": "1,822,892"}, "rate": 75.0}, {"name": "중고등부", "hex": "#4a90e2", "written": true, "jae": 43, "chul": 32, "gyeol": 5, "jang": 8, "neww": 2, "tea": 15, "sermon": "가볍게 여긴 자의 최후 (창26)", "verse": "창세기 25:19-34", "plan": "여름수련회 중보기도 · 7/12 전반기 성경읽기 시상 · 7/30~8/1 수련회(대전)", "fin": {"gm": "280,000", "bal": "1,167,499"}, "rate": 74.4}, {"name": "청년부", "hex": "#a06bf0", "written": true, "jae": 60, "chul": 50, "gyeol": 19, "jang": 12, "neww": 1, "sermon": "사람을 향하신 주님", "verse": "시편 8:1-9", "plan": "7/16~18 여름수련회 · 대심방/연합셀 · 새가족 심방", "fin": {"gm": "1,071,000", "bal": "21,035,473"}, "rate": 83.3}];
 
 const grid = document.getElementById('deptGrid');
 depts.forEach((d,i)=>{
+  if(!d.written){
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="card unwritten">
+        <div class="hd">
+          <div class="name"><span class="dot" style="background:#cbd5e1"></span>${d.name}</div>
+          <div class="rate" style="color:#94a3b8">미작성</div>
+        </div>
+        <div class="ubody"><div>📝 보고서 미작성</div><div class="u2">해당 부서 보고서가 아직 작성 완료되지 않았습니다.</div></div>
+      </div>`);
+    return;
+  }
   const teaStat = d.tea!==undefined ? `<div class="stat tea"><div class="n">${d.tea}</div><div class="k">교사</div></div>` : `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>`;
   const extraNew = d.tea!==undefined ? `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>` : "";
   grid.insertAdjacentHTML('beforeend', `
@@ -177,6 +202,7 @@ depts.forEach((d,i)=>{
 });
 
 depts.forEach((d,i)=>{
+  if(!d.written) return;
   new Chart(document.getElementById('c'+i),{
     type:'doughnut',
     data:{datasets:[{data:[d.chul, Math.max(d.jae-d.chul,0)], backgroundColor:[d.hex,'#e6eaf2'], borderWidth:0}]},
@@ -184,18 +210,24 @@ depts.forEach((d,i)=>{
   });
 });
 
-const chulLabelPlugin = {
-  id:'chulLabel',
+const barLabelPlugin = {
+  id:'barLabel',
   afterDatasetsDraw(chart){
     const ctx = chart.ctx;
     const meta = chart.getDatasetMeta(0);
     meta.data.forEach((bar,i)=>{
+      const d = depts[i];
       ctx.save();
-      ctx.fillStyle = depts[i].hex;
       ctx.font = '700 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(depts[i].chul + '명', bar.x, bar.y - 6);
+      if(d.written){
+        ctx.fillStyle = d.hex;
+        ctx.fillText(d.chul + '명', bar.x, bar.y - 6);
+      }else{
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('미작성', bar.x, chart.scales.y.getPixelForValue(0) - 6);
+      }
       ctx.restore();
     });
   }
@@ -205,26 +237,30 @@ new Chart(document.getElementById('cmpChart'),{
   type:'bar',
   data:{
     labels:depts.map(d=>d.name),
-    datasets:[{data:depts.map(d=>d.rate), backgroundColor:depts.map(d=>d.hex), borderRadius:8, barThickness:44}]
+    datasets:[{data:depts.map(d=>d.written?d.rate:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44}]
   },
   options:{
     maintainAspectRatio:false,
     layout:{padding:{top:18}},
     plugins:{
       legend:{display:false},
-      tooltip:{callbacks:{label:c=>'출석률 '+c.parsed.y+'% · 출석 '+depts[c.dataIndex].chul+'명'}}
+      tooltip:{callbacks:{label:c=>{const d=depts[c.dataIndex];return d.written?('출석률 '+d.rate+'% · 출석 '+d.chul+'명'):'보고서 미작성';}}}
     },
     scales:{
       y:{beginAtZero:true, max:100, ticks:{color:'#64748b', callback:v=>v+'%'}, grid:{color:'#e2e7f0'}},
       x:{ticks:{color:'#1e293b', font:{weight:'700'}}, grid:{display:false}}
     }
   },
-  plugins:[chulLabelPlugin]
+  plugins:[barLabelPlugin]
 });
 
-const abs = [{"name": "유치부", "w": [3, 2, 0, 1], "jang": 1}, {"name": "유초등부", "w": [7, 0, 0, 0], "jang": 3}, {"name": "중고등부", "w": [2, 3, 0, 0], "jang": 8}, {"name": "청년부", "w": [0, 0, 0, 0], "jang": 12}];
+const abs = [{"name": "유치부", "w": [3, 2, 0, 1], "jang": 1, "written": true}, {"name": "유초등부", "w": [7, 0, 0, 0], "jang": 3, "written": true}, {"name": "중고등부", "w": [2, 3, 0, 0], "jang": 8, "written": true}, {"name": "청년부", "w": [0, 0, 0, 0], "jang": 12, "written": true}];
 const ag = document.getElementById('absGrid');
 abs.forEach(a=>{
+  if(a.written===false){
+    ag.insertAdjacentHTML('beforeend',`<div class="abscol uw"><div>${a.name}<br>보고서 미작성</div></div>`);
+    return;
+  }
   ag.insertAdjacentHTML('beforeend',`
     <div class="abscol">
       <div class="t">${a.name}</div>
@@ -236,15 +272,25 @@ abs.forEach(a=>{
     </div>`);
 });
 
-const noteData = [{"name": "유치부", "hex": "#f59e42", "items": ["7월 2주차부터 2학기 교재 시작", "3~4주 여름성경학교 준비 / 교사 강습"]}, {"name": "유초등부", "hex": "#34c98b", "items": ["하나바이블 6과정 2학기 7단원 진행", "새친구 1명 등반"]}, {"name": "중고등부", "hex": "#4a90e2", "items": ["새친구 2명 : 이혜민, 앨런", "전반기 성경읽기 시상 8명 진행", "여름수련회 7/30(목)~8/1(토) 주바라기캠프(한남대) · 교사 포함 40명 가등록"]}, {"name": "청년부", "hex": "#a06bf0", "items": ["여름수련회 7/16(목)~18(토) · 참석 46명(전참·부분참 포함)", "새가족 홍인석 형제(오산·영어강사) 등록", "이상수 형제 셀 편성"]}];
+const noteData = [{"name": "유치부", "hex": "#f59e42", "items": ["7월 2주차부터 2학기 교재 시작", "3~4주 여름성경학교 준비 / 교사 강습"], "written": true}, {"name": "유초등부", "hex": "#34c98b", "items": ["하나바이블 6과정 2학기 7단원 진행", "새친구 1명 등반"], "written": true}, {"name": "중고등부", "hex": "#4a90e2", "items": ["새친구 2명 : 이혜민, 앨런", "전반기 성경읽기 시상 8명 진행", "여름수련회 7/30(목)~8/1(토) 주바라기캠프(한남대) · 교사 포함 40명 가등록"], "written": true}, {"name": "청년부", "hex": "#a06bf0", "items": ["여름수련회 7/16(목)~18(토) · 참석 46명(전참·부분참 포함)", "새가족 홍인석 형제(오산·영어강사) 등록", "이상수 형제 셀 편성"], "written": true}];
 const ng = document.getElementById('noteGrid');
 noteData.forEach(d=>{
+  const items = (d.written===false)
+    ? `<li class="uw" style="--mk:#94a3b8">보고서 미작성</li>`
+    : d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("");
   ng.insertAdjacentHTML('beforeend',`
     <div class="noteDept">
       <div class="nhd"><span class="dot" style="background:${d.hex}"></span><span style="color:${d.hex}">${d.name}</span></div>
-      <ul>${d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("")}</ul>
+      <ul>${items}</ul>
     </div>`);
 });
+
+const unwritten = [];
+if(unwritten.length){
+  const wb = document.getElementById('warnbar');
+  wb.classList.add('show');
+  wb.innerHTML = '⚠ 보고서 미작성 부서: <b>'+unwritten.join(', ')+'</b> · 상단 합계·출석률 비교 수치는 작성완료 부서 기준입니다.';
+}
 </script>
 </body>
 </html>
