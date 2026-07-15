@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교육부서 현황 대시보드 · 2026.07.12</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel2:#f2f5fa; --line:#e2e7f0;
+    --txt:#1e293b; --muted:#64748b; --gold:#c8951a;
+    --c-yc:#f59e42; --c-ye:#34c98b; --c-jg:#4a90e2; --c-cn:#a06bf0;
+    --good:#1f9d6b; --warn:#d99311; --bad:#e0564f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--txt);
+    padding:28px 32px 48px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+  header.top h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  header.top h1 span{color:var(--gold)}
+  header.top .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  header.top .date{text-align:right}
+  header.top .date .d{font-size:20px;font-weight:700}
+  header.top .date .w{color:var(--muted);font-size:13px}
+
+  .summary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:26px}
+  .kpi{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:14px;padding:16px 16px 14px;position:relative;overflow:hidden;
+    box-shadow:0 1px 3px rgba(30,41,59,.06)}
+  .kpi .lbl{color:var(--muted);font-size:12.5px;font-weight:600}
+  .kpi .val{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-1px}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--muted);margin-left:3px}
+  .kpi.hl .val{color:var(--gold)}
+  .kpi .bar{position:absolute;left:0;top:0;height:4px;width:100%;background:var(--gold);opacity:.85}
+
+  .section-title{font-size:15px;font-weight:700;color:var(--muted);margin:6px 0 14px;
+    display:flex;align-items:center;gap:8px}
+  .section-title::before{content:"";width:4px;height:16px;background:var(--gold);border-radius:2px}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:30px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .card .hd{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--line)}
+  .card .hd .name{font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
+  .card .hd .dot{width:12px;height:12px;border-radius:50%}
+  .card .hd .rate{font-size:15px;font-weight:700}
+  .card .body{padding:16px 18px 18px;display:grid;grid-template-columns:130px 1fr;gap:16px}
+  .chartbox{position:relative;height:130px;display:flex;align-items:center;justify-content:center}
+  .chartbox .ctr{position:absolute;text-align:center}
+  .chartbox .ctr .p{font-size:22px;font-weight:800}
+  .chartbox .ctr .t{font-size:11px;color:var(--muted)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center}
+  .stat .n{font-size:20px;font-weight:800;line-height:1.1}
+  .stat .k{font-size:11px;color:var(--muted);margin-top:3px}
+  .stat.jae .n{color:#334155}
+  .stat.chul .n{color:var(--good)}
+  .stat.gyeol .n{color:var(--warn)}
+  .stat.jang .n{color:var(--bad)}
+  .stat.new .n{color:var(--gold)}
+  .stat.tea .n{color:#3f76c4}
+
+  .meta{grid-column:1/3;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;
+    display:grid;grid-template-columns:1fr;gap:8px;font-size:13px}
+  .meta .row{display:flex;gap:8px}
+  .meta .row .mk{color:var(--muted);min-width:44px;font-weight:600}
+  .meta .row .mv{flex:1}
+  .fin{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .fin b{color:var(--txt);font-weight:700}
+
+  .btm{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;margin-bottom:26px}
+  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .panelbox h3{font-size:15px;font-weight:700;margin-bottom:14px}
+  .cmpchart{height:230px}
+  .absgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+  .abscol{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .abscol .t{font-size:12.5px;font-weight:700;margin-bottom:8px;text-align:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .absline{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);padding:2px 0}
+  .absline b{color:var(--txt)}
+  .absline.lt b{color:var(--bad)}
+
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .notes h3{font-size:15px;font-weight:700;margin-bottom:14px}
+  .noteGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .noteDept{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .noteDept .nhd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;
+    padding-bottom:8px;margin-bottom:9px;border-bottom:1px solid var(--line)}
+  .noteDept .nhd .dot{width:10px;height:10px;border-radius:50%}
+  .noteDept ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .noteDept li{font-size:12.5px;line-height:1.45;padding-left:14px;position:relative;color:#334155}
+  .noteDept li::before{content:"▪";position:absolute;left:0;top:0;color:var(--mk)}
+  @media(max-width:900px){.noteGrid{grid-template-columns:1fr 1fr}}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+  @media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}.grid,.btm{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>교육부서 주간 <span>현황 대시보드</span></h1>
+      <div class="sub">송탄영광교회 교육부서 주간 사역보고서 · 담임목사님 보고용</div>
+    </div>
+    <div class="date">
+      <div class="d">2026. 7. 12</div>
+      <div class="w">주일 · 2026년 7월 2주차</div>
+    </div>
+  </header>
+
+  <div class="summary">
+    <div class="kpi"><div class="bar"></div><div class="lbl">전체 재적</div><div class="val">155<small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--good)"></div><div class="lbl">전체 출석</div><div class="val">118<small>명</small></div></div>
+    <div class="kpi hl"><div class="bar"></div><div class="lbl">전체 출석률</div><div class="val">76.1<small>%</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--warn)"></div><div class="lbl">결석 / 장기결석</div><div class="val">37<small>·24명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--gold)"></div><div class="lbl">새친구</div><div class="val">4<small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:#7fd1c0"></div><div class="lbl">금주 헌금</div><div class="val">152<small>만원</small></div></div>
+  </div>
+
+  <div class="section-title">부서별 현황</div>
+  <div class="grid" id="deptGrid"></div>
+
+  <div class="btm">
+    <div class="panelbox">
+      <h3>부서별 출석률 비교</h3>
+      <div class="cmpchart"><canvas id="cmpChart"></canvas></div>
+    </div>
+    <div class="panelbox">
+      <h3>주차별 결석 인원</h3>
+      <div class="absgrid" id="absGrid"></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h3>주요 사항 · 특이사항</h3>
+    <div class="noteGrid" id="noteGrid"></div>
+  </div>
+
+  <footer>자료 출처: 교육부서 주간 사역보고서 스프레드시트 (260712 탭) · 생성일 2026.07.15</footer>
+</div>
+
+<script>
+const depts = [
+  { name:"유치부", hex:"#f59e42", jae:16, chul:9, gyeol:6, jang:1, neww:0, rate:56.2,
+    sermon:"하나님의 긍휼하심을 닮아갈 수 있어요!", verse:"시편 25:6",
+    plan:"2학기 교재 시작 · 매주 공과(만들기) · 여름성경학교 준비/교사강습",
+    fin:{gm:"58,000", bal:"1,389,432"} },
+  { name:"유초등부", hex:"#34c98b", jae:36, chul:27, gyeol:7, jang:3, neww:1, rate:75.0,
+    sermon:"나만 잘 살면 되는 걸까요?", verse:"누가복음 10:30-37",
+    plan:"하나바이블 6과정 2학기 · 7단원 25과(개인주의) · 여름성경학교 준비",
+    fin:{gm:"111,000", bal:"1,822,892"} },
+  { name:"중고등부", hex:"#4a90e2", jae:43, chul:32, gyeol:5, jang:8, neww:2, rate:74.4, tea:15,
+    sermon:"가볍게 여긴 자의 최후 (창26)", verse:"창세기 25:19-34",
+    plan:"여름수련회 중보기도 · 7/12 전반기 성경읽기 시상 · 7/30~8/1 수련회(대전)",
+    fin:{gm:"280,000", bal:"1,167,499"} },
+  { name:"청년부", hex:"#a06bf0", jae:60, chul:50, gyeol:19, jang:12, neww:1, rate:83.3,
+    sermon:"사람을 향하신 주님", verse:"시편 8:1-9",
+    plan:"7/16~18 여름수련회 · 대심방/연합셀 · 새가족 심방",
+    fin:{gm:"1,071,000", bal:"21,035,473"} },
+];
+
+const grid = document.getElementById('deptGrid');
+depts.forEach((d,i)=>{
+  const teaStat = d.tea!==undefined ? `<div class="stat tea"><div class="n">${d.tea}</div><div class="k">교사</div></div>` : `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>`;
+  const extraNew = d.tea!==undefined ? `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>` : "";
+  grid.insertAdjacentHTML('beforeend', `
+    <div class="card">
+      <div class="hd">
+        <div class="name"><span class="dot" style="background:${d.hex}"></span>${d.name}</div>
+        <div class="rate" style="color:${d.hex}">출석률 ${d.rate}%</div>
+      </div>
+      <div class="body">
+        <div class="chartbox">
+          <canvas id="c${i}"></canvas>
+          <div class="ctr"><div class="p" style="color:${d.hex}">${d.rate}%</div><div class="t">출석 ${d.chul}/${d.jae}</div></div>
+        </div>
+        <div class="stats">
+          <div class="stat jae"><div class="n">${d.jae}</div><div class="k">재적</div></div>
+          <div class="stat chul"><div class="n">${d.chul}</div><div class="k">출석</div></div>
+          <div class="stat gyeol"><div class="n">${d.gyeol}</div><div class="k">결석</div></div>
+          <div class="stat jang"><div class="n">${d.jang}</div><div class="k">장기결석</div></div>
+          ${teaStat}${extraNew}
+        </div>
+        <div class="meta">
+          <div class="row"><span class="mk">설교</span><span class="mv">${d.sermon} <span style="color:var(--muted)">(${d.verse})</span></span></div>
+          <div class="row"><span class="mk">사역</span><span class="mv">${d.plan}</span></div>
+          <div class="row"><span class="mk">재정</span><span class="mv"><span class="fin">금주헌금 <b>${d.fin.gm}</b>원 · 총잔액 <b>${d.fin.bal}</b>원</span></span></div>
+        </div>
+      </div>
+    </div>`);
+});
+
+depts.forEach((d,i)=>{
+  new Chart(document.getElementById('c'+i),{
+    type:'doughnut',
+    data:{datasets:[{data:[d.chul, Math.max(d.jae-d.chul,0)], backgroundColor:[d.hex,'#e6eaf2'], borderWidth:0}]},
+    options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:600}}
+  });
+});
+
+new Chart(document.getElementById('cmpChart'),{
+  type:'bar',
+  data:{labels:depts.map(d=>d.name),
+    datasets:[{data:depts.map(d=>d.rate),
+      backgroundColor:depts.map(d=>d.hex),borderRadius:8,barThickness:44}]},
+  options:{plugins:{legend:{display:false},
+    tooltip:{callbacks:{label:c=>c.parsed.y+'%'}}},
+    scales:{y:{beginAtZero:true,max:100,ticks:{color:'#64748b',callback:v=>v+'%'},grid:{color:'#e2e7f0'}},
+      x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}}}
+});
+
+const abs = [
+  {name:"유치부", w:[3,2,0,1], jang:1},
+  {name:"유초등부", w:[7,0,0,0], jang:3},
+  {name:"중고등부", w:[2,3,0,0], jang:8},
+  {name:"청년부", w:[0,0,0,0], jang:12},
+];
+const noteData = [
+  { name:"유치부", hex:"#f59e42", items:[
+    "7월 2주차부터 2학기 교재 시작",
+    "3~4주 여름성경학교 준비 / 교사 강습" ] },
+  { name:"유초등부", hex:"#34c98b", items:[
+    "하나바이블 6과정 2학기 7단원 진행",
+    "새친구 1명 등반" ] },
+  { name:"중고등부", hex:"#4a90e2", items:[
+    "새친구 이혜민·앨런 등반",
+    "전반기 성경읽기 시상 8명 진행",
+    "여름수련회 7/30(목)~8/1(토) 주바라기캠프(한남대) · 교사 포함 40명 가등록" ] },
+  { name:"청년부", hex:"#a06bf0", items:[
+    "여름수련회 7/16(목)~18(토) · 참석 46명(전참·부분참 포함)",
+    "새가족 홍인석 형제(오산·영어강사) 등록",
+    "이상수 형제 셀 편성" ] },
+];
+const ng = document.getElementById('noteGrid');
+noteData.forEach(d=>{
+  ng.insertAdjacentHTML('beforeend',`
+    <div class="noteDept">
+      <div class="nhd"><span class="dot" style="background:${d.hex}"></span><span style="color:${d.hex}">${d.name}</span></div>
+      <ul>${d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("")}</ul>
+    </div>`);
+});
+
+const ag = document.getElementById('absGrid');
+abs.forEach(a=>{
+  ag.insertAdjacentHTML('beforeend',`
+    <div class="abscol">
+      <div class="t">${a.name}</div>
+      <div class="absline"><span>1주차</span><b>${a.w[0]}</b></div>
+      <div class="absline"><span>2주차</span><b>${a.w[1]}</b></div>
+      <div class="absline"><span>3주차</span><b>${a.w[2]}</b></div>
+      <div class="absline"><span>4주차</span><b>${a.w[3]}</b></div>
+      <div class="absline lt"><span>장기결석</span><b>${a.jang}</b></div>
+    </div>`);
+});
+</script>
+</body>
+</html>
