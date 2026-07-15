@@ -72,10 +72,10 @@
   .fin b{color:var(--txt);font-weight:700}
 
   .btm{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px;align-items:stretch}
-  .panelbox{display:flex;flex-direction:column}
-  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;
+    box-shadow:0 1px 4px rgba(30,41,59,.06);display:flex;flex-direction:column}
   .panelbox h3{font-size:15px;font-weight:700;margin-bottom:14px}
-  .cmpchart{height:230px}
+  .cmpchart{flex:1;min-height:230px}
   .absgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
   .abscol{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
   .abscol .t{font-size:12.5px;font-weight:700;margin-bottom:8px;text-align:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -200,16 +200,25 @@ const chulLabelPlugin = {
     });
   }
 };
+
 new Chart(document.getElementById('cmpChart'),{
   type:'bar',
-  data:{labels:depts.map(d=>d.name),
-    datasets:[{data:depts.map(d=>d.rate),
-      backgroundColor:depts.map(d=>d.hex),borderRadius:8,barThickness:44}]},
-  options:{layout:{padding:{top:18}},
-    plugins:{legend:{display:false},
-    tooltip:{callbacks:{label:c=>'출석률 '+c.parsed.y+'% · 출석 '+depts[c.dataIndex].chul+'명'}}},
-    scales:{y:{beginAtZero:true,max:100,ticks:{color:'#64748b',callback:v=>v+'%'},grid:{color:'#e2e7f0'}},
-      x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}},
+  data:{
+    labels:depts.map(d=>d.name),
+    datasets:[{data:depts.map(d=>d.rate), backgroundColor:depts.map(d=>d.hex), borderRadius:8, barThickness:44}]
+  },
+  options:{
+    maintainAspectRatio:false,
+    layout:{padding:{top:18}},
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'출석률 '+c.parsed.y+'% · 출석 '+depts[c.dataIndex].chul+'명'}}
+    },
+    scales:{
+      y:{beginAtZero:true, max:100, ticks:{color:'#64748b', callback:v=>v+'%'}, grid:{color:'#e2e7f0'}},
+      x:{ticks:{color:'#1e293b', font:{weight:'700'}}, grid:{display:false}}
+    }
+  },
   plugins:[chulLabelPlugin]
 });
 
