@@ -203,6 +203,8 @@ function countUp(el, target, dec, delay){
   if(!el) return;
   const t = Number(target) || 0, dur = 1400;
   const fmt = v => dec ? v.toFixed(dec) : String(Math.round(v));
+  // 탭이 백그라운드면 애니메이션 프레임이 멈추므로 곧바로 최종값을 넣는다
+  if(document.hidden){ el.textContent = fmt(t); return; }
   el.textContent = fmt(0);
   cuTimers.push(setTimeout(function(){
     const t0 = performance.now();
@@ -212,6 +214,8 @@ function countUp(el, target, dec, delay){
       if(p < 1) requestAnimationFrame(step); else el.textContent = fmt(t);
     })(performance.now());
   }, delay || 0));
+  // 프레임이 지연·정지되어도 최종값은 반드시 표시되도록 보정
+  cuTimers.push(setTimeout(function(){ el.textContent = fmt(t); }, (delay || 0) + dur + 400));
 }
 
 // 화면에 들어오는 요소에 .in 을 붙여 서서히 나타나게 하고, 차트는 그 시점에 생성해 애니메이션이 스크롤과 함께 재생되게 한다.
