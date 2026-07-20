@@ -197,6 +197,23 @@ const $ = id => document.getElementById(id);
 
 async function jget(u){ const r = await fetch(u, {cache:'no-store'}); if(!r.ok) throw new Error('load fail '+u); return r.json(); }
 
+// 상단 KPI 숫자 카운트업(약 1.4초, ease-out) — 카드별로 조금씩 시차를 두고 올라간다
+const cuTimers = [];
+function countUp(el, target, dec, delay){
+  if(!el) return;
+  const t = Number(target) || 0, dur = 1400;
+  const fmt = v => dec ? v.toFixed(dec) : String(Math.round(v));
+  el.textContent = fmt(0);
+  cuTimers.push(setTimeout(function(){
+    const t0 = performance.now();
+    (function step(now){
+      const p = Math.min((now - t0) / dur, 1);
+      el.textContent = fmt(t * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(step); else el.textContent = fmt(t);
+    })(performance.now());
+  }, delay || 0));
+}
+
 // 화면에 들어오는 요소에 .in 을 붙여 서서히 나타나게 하고, 차트는 그 시점에 생성해 애니메이션이 스크롤과 함께 재생되게 한다.
 function setupObservers(makers){
   if(io) io.disconnect();
@@ -215,6 +232,7 @@ function setupObservers(makers){
 
 function render(week){
   charts.forEach(c=>{ try{c.destroy();}catch(e){} }); charts = [];
+  cuTimers.splice(0).forEach(clearTimeout);
   const depts = week.depts.map(d=>Object.assign({}, d, {written: d.written!==false}));
   depts.forEach(d=> d.rate = (d.written && d.jae) ? Math.round(d.chul/d.jae*1000)/10 : null);
   const uset = new Set(depts.filter(d=>!d.written).map(d=>d.name));
@@ -228,8 +246,9 @@ function render(week){
   $('dBig').textContent = week.date_big;
   $('dSub').textContent = week.date_sub;
   document.title = '교육부서 현황 대시보드 · ' + week.date_big;
-  $('kJae').textContent=tJae; $('kChul').textContent=tChul; $('kRate').textContent=tRate;
-  $('kGyeol').textContent=tGyeol; $('kJang').textContent=tJang; $('kNew').textContent=tNew; $('kMan').textContent=man;
+  [['kJae',tJae,0,0],['kChul',tChul,0,120],['kRate',tRate,1,240],['kGyeol',tGyeol,0,360],
+   ['kJang',tJang,0,360],['kNew',tNew,0,480],['kMan',man,0,600]]
+    .forEach(function(a){ countUp($(a[0]), a[1], a[2], a[3]); });
 
   const unwritten = [...uset];
   const wb = $('warnbar');
