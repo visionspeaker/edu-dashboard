@@ -137,7 +137,22 @@
   .noteDept li::before{content:"▪";position:absolute;left:0;top:0;color:var(--mk)}
   .noteDept li.uw{color:#94a3b8;font-weight:600}
   .noteDept li.uw::before{color:#94a3b8}
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+  .vcbar{border-top:1px solid var(--line);margin-top:24px;padding-top:16px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .vcbox{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 16px;box-shadow:0 1px 3px rgba(30,41,59,.06)}
+  .vcemo{font-size:15px}
+  .vclbl{font-size:13.5px;font-weight:700;color:#334155}
+  .vcsep{width:1px;height:14px;background:var(--line);display:inline-block}
+  .vcm{font-size:13px;color:var(--muted)}
+  .vcm b{font-weight:800;font-size:14px}
+  #vcToday{color:var(--gold)} #vcTotal{color:#334155}
+  .vcdot{color:#cbd5e1}
+  .vcbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:9px 15px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;box-shadow:0 1px 3px rgba(30,41,59,.06);transition:background .15s}
+  .vcbtn:hover{background:#eef1f7}
+  .vcbtn svg{width:15px;height:15px}
+  .vcbtn.spin svg{animation:vcspin .6s linear}
+  @keyframes vcspin{to{transform:rotate(360deg)}}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:14px}
   @media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}.grid,.btm{grid-template-columns:1fr}.noteGrid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -187,6 +202,17 @@
 
   <div class="notes reveal"><h3>주요 사항 · 특이사항</h3><div class="noteGrid" id="noteGrid"></div></div>
 
+  <div class="vcbar">
+    <div class="vcbox">
+      <span class="vcemo">👥</span><span class="vclbl">방문자</span>
+      <span class="vcsep"></span>
+      <span class="vcm">Today <b id="vcToday">–</b></span><span class="vcdot">·</span>
+      <span class="vcm">Total <b id="vcTotal">–</b></span>
+    </div>
+    <button class="vcbtn" id="refreshBtn" title="데이터 새로고침 (방문자 수는 증가하지 않습니다)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>새로고침
+    </button>
+  </div>
   <footer id="foot">자료 불러오는 중…</footer>
 </div>
 
@@ -385,11 +411,51 @@ $('wkMenu').addEventListener('click', (e)=> e.stopPropagation());
 document.addEventListener('click', ()=> closeMenu());
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
 
+// 방문자 카운터 (무료 CORS 카운터 Abacus). hit=증가, get=조회만.
+const VC_NS = 'hyele-edu-dashboard';
+function vcDayKey(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return 'day-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate()); }
+function vcShow(today,total){
+  $('vcToday').textContent = (today==null?'–':Number(today).toLocaleString());
+  $('vcTotal').textContent = (total==null?'–':Number(total).toLocaleString());
+}
+async function vcCall(mode){  // 'hit'(증가) | 'get'(조회)
+  const base='https://abacus.jasoncameron.dev/'+mode+'/'+VC_NS+'/';
+  try{
+    const [t,dd] = await Promise.all([
+      fetch(base+'total').then(r=>r.json()),
+      fetch(base+vcDayKey()).then(r=>r.json())
+    ]);
+    vcShow(dd.value, t.value);
+  }catch(e){ vcShow(null,null); }
+}
+function initVisitor(){
+  // 접속 시 세션당 1회만 증가. 새로고침/재렌더는 증가하지 않음.
+  if(sessionStorage.getItem('edu_vc_done')){ vcCall('get'); }
+  else { sessionStorage.setItem('edu_vc_done','1'); vcCall('hit'); }
+}
+
+// 새로고침 버튼: 방문자 수는 그대로 두고, 데이터 캐시만 새로 받아 다시 그린다.
+async function refreshData(){
+  const b=$('refreshBtn'); b.classList.add('spin'); setTimeout(()=>b.classList.remove('spin'),650);
+  const prevTab = manifest[cur] ? manifest[cur].tab : null;
+  for(const k in cache) delete cache[k];
+  try{
+    manifest = await jget('manifest.json');
+    manifest.sort((a,b)=> a.tab<b.tab?1:-1);
+    let idx = 0;
+    if(prevTab){ const j = manifest.findIndex(w=>w.tab===prevTab); if(j>=0) idx=j; }
+    await goto(idx);
+    vcCall('get');   // 조회만 (증가 없음)
+  }catch(e){ $('foot').textContent = '새로고침 실패: ' + e.message; }
+}
+$('refreshBtn').onclick = refreshData;
+
 (async ()=>{
   try{
     manifest = await jget('manifest.json');
     manifest.sort((a,b)=> a.tab<b.tab?1:-1);  // 최신 먼저
     await goto(0);
+    initVisitor();
   }catch(e){
     $('foot').textContent = '데이터를 불러오지 못했습니다: ' + e.message;
   }
