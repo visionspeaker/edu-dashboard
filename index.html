@@ -196,7 +196,7 @@
   <div class="grid" id="deptGrid"></div>
 
   <div class="btm">
-    <div class="panelbox reveal"><h3>부서별 출석률 비교</h3><div class="cmpchart"><canvas id="cmpChart"></canvas></div></div>
+    <div class="panelbox reveal"><h3>부서별 출석 인원 <small style="font-weight:500;color:#94a3b8;font-size:12px">연한 막대 = 재적</small></h3><div class="cmpchart"><canvas id="cmpChart"></canvas></div></div>
     <div class="panelbox reveal"><h3>주차별 결석 인원</h3><div class="absgrid" id="absGrid"></div></div>
   </div>
 
@@ -329,20 +329,27 @@ function render(week){
   });
 
   const barLabel = { id:'barLabel', afterDatasetsDraw(chart){
-    const ctx=chart.ctx, meta=chart.getDatasetMeta(0);
-    meta.data.forEach((bar,i)=>{ const d=depts[i]; ctx.save();
+    const ctx=chart.ctx, jm=chart.getDatasetMeta(0), cm=chart.getDatasetMeta(1);
+    cm.data.forEach((bar,i)=>{ const d=depts[i]; ctx.save();
       ctx.font='700 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      if(d.written){ ctx.fillStyle=d.hex; ctx.fillText(d.chul+'명', bar.x, bar.y-6); }
+      if(d.written){
+        ctx.fillStyle=d.hex; ctx.fillText(d.chul+' / '+d.jae+'명', bar.x, jm.data[i].y-6);
+        const h=bar.base-bar.y;
+        if(h>15){ ctx.font=(h>22?'700 12px':'700 11px')+' "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(d.rate+'%', bar.x, bar.y+h/2); }
+      }
       else { ctx.fillStyle='#94a3b8'; ctx.fillText('미작성', bar.x, chart.scales.y.getPixelForValue(0)-6); }
       ctx.restore(); });
   }};
+  const yMax = Math.max(10, Math.ceil(Math.max(...depts.map(d=>d.written?(d.jae||0):0))*1.12/10)*10);
   const barHost = $('cmpChart').closest('.panelbox');
   makers.set(barHost, ()=> new Chart($('cmpChart'),{ type:'bar',
-    data:{labels:depts.map(d=>d.name), datasets:[{data:depts.map(d=>d.written?d.rate:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44}]},
+    data:{labels:depts.map(d=>d.name), datasets:[
+      {data:depts.map(d=>d.written?d.jae:0), backgroundColor:depts.map(d=>d.hex+'33'), borderRadius:8, barThickness:44, grouped:false, order:2},
+      {data:depts.map(d=>d.written?d.chul:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44, grouped:false, order:1}]},
     options:{maintainAspectRatio:false, layout:{padding:{top:18}},
       animation:{duration:900,easing:'easeOutQuart',delay:(ctx)=> ctx.type==='data'? ctx.dataIndex*120 : 0},
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>{const d=depts[c.dataIndex]; return d.written?('출석률 '+d.rate+'% · 출석 '+d.chul+'명'):'보고서 미작성';}}}},
-      scales:{y:{beginAtZero:true,max:100,ticks:{color:'#64748b',callback:v=>v+'%'},grid:{color:'#e2e7f0'}}, x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}}},
+      plugins:{legend:{display:false}, tooltip:{filter:c=>c.datasetIndex===1, callbacks:{label:c=>{const d=depts[c.dataIndex]; return d.written?('출석 '+d.chul+'명 / 재적 '+d.jae+'명 · 출석률 '+d.rate+'%'):'보고서 미작성';}}}},
+      scales:{y:{beginAtZero:true,max:yMax,ticks:{color:'#64748b',callback:v=>v+'명'},grid:{color:'#e2e7f0'}}, x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}}},
     plugins:[barLabel] }));
 
   setupObservers(makers);
