@@ -197,7 +197,7 @@
 
   <div class="btm">
     <div class="panelbox reveal"><h3>부서별 출석 인원 <small style="font-weight:500;color:#94a3b8;font-size:12px">연한 막대 = 재적</small></h3><div class="cmpchart"><canvas id="cmpChart"></canvas></div></div>
-    <div class="panelbox reveal"><h3>주차별 결석 인원</h3><div class="absgrid" id="absGrid"></div></div>
+    <div class="panelbox reveal"><h3>연속 결석 현황</h3><div class="absgrid" id="absGrid"></div></div>
   </div>
 
   <div class="notes reveal"><h3>주요 사항 · 특이사항</h3><div class="noteGrid" id="noteGrid"></div></div>
@@ -360,10 +360,10 @@ function render(week){
     ag.insertAdjacentHTML('beforeend', `
       <div class="abscol"><div class="t">${a.name}</div>
         <div class="ablines">
-          <div class="absline"><span>1주차</span><b>${a.w[0]}</b></div>
-          <div class="absline"><span>2주차</span><b>${a.w[1]}</b></div>
-          <div class="absline"><span>3주차</span><b>${a.w[2]}</b></div>
-          <div class="absline"><span>4주차</span><b>${a.w[3]}</b></div>
+          <div class="absline"><span>이번 주</span><b>${a.w[0]}</b></div>
+          <div class="absline"><span>2주 연속</span><b>${a.w[1]}</b></div>
+          <div class="absline"><span>3주 연속</span><b>${a.w[2]}</b></div>
+          <div class="absline"><span>4주 연속</span><b>${a.w[3]}</b></div>
           <div class="absline lt"><span>장기결석</span><b>${a.jang}</b></div>
         </div>
       </div>`);
