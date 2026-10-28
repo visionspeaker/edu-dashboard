@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교육부서 현황 대시보드</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="manifest" href="app.webmanifest">
+<meta name="theme-color" content="#35594a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="교육부 현황판">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel2:#f2f5fa; --line:#e2e7f0;
+    --txt:#1e293b; --muted:#64748b; --gold:#c8951a;
+    --good:#1f9d6b; --warn:#d99311; --bad:#e0564f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--txt);
+    padding:28px 32px 48px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto}
+  header.top{display:flex;align-items:center;justify-content:space-between;
+    border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:20px;flex-wrap:wrap;gap:14px}
+  header.top h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  header.top h1 span{color:var(--gold)}
+  header.top .sub{color:var(--muted);font-size:14px;margin-top:6px}
+  .hright{display:flex;align-items:center;gap:12px}
+  .reportbtn{display:inline-flex;align-items:center;gap:7px;background:#5eb045;color:#fff;font-size:13px;font-weight:700;
+    padding:9px 14px;border-radius:10px;text-decoration:none;box-shadow:0 1px 3px rgba(30,41,59,.1);white-space:nowrap;transition:background .15s}
+  .reportbtn:hover{background:#4e9a38}
+  .reportbtn svg{width:15px;height:15px}
+  .dnav{display:flex;align-items:center;gap:10px}
+  .navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;
+    color:var(--gold);font-size:20px;font-weight:800;cursor:pointer;line-height:1;
+    box-shadow:0 1px 2px rgba(30,41,59,.06);transition:.15s}
+  .navbtn:hover:not(:disabled){background:var(--gold);color:#fff;border-color:var(--gold)}
+  .navbtn:disabled{cursor:default;opacity:.3}
+  .dbox{position:relative;min-width:150px;text-align:center;cursor:pointer;user-select:none;
+    border-radius:9px;padding:3px 10px;transition:background .15s}
+  .dbox:hover{background:#eef1f7}
+  .dbox.open{background:#eef1f7}
+  .dbox .d{font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+  .dbox .caret{font-size:12px;color:var(--gold);transition:transform .2s}
+  .dbox.open .caret{transform:rotate(180deg)}
+  .dbox .w{color:var(--muted);font-size:13px}
+  .wkmenu{position:absolute;top:calc(100% + 8px);right:0;z-index:60;background:#fff;border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 10px 28px rgba(30,41,59,.16);padding:6px;min-width:220px;max-height:340px;
+    overflow:auto;display:none;text-align:left}
+  .wkmenu.show{display:block}
+  .wkmenu .mhd{font-size:11px;font-weight:700;color:var(--muted);padding:6px 10px 4px}
+  .wkitem{padding:8px 11px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+  .wkitem:hover{background:#f2f5fa}
+  .wkitem.active{background:#fff4e0}
+  .wkitem .wi1{font-size:13.5px;font-weight:700}
+  .wkitem .wi2{font-size:11px;color:var(--muted)}
+
+  .warnbar{background:#fff4e5;border:1px solid #f6c988;color:#8a5a12;border-radius:10px;
+    padding:11px 15px;margin-bottom:18px;font-size:13px;font-weight:600;display:none}
+  .warnbar.show{display:block}
+  .warnbar b{color:#c2410c}
+
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  .summary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:26px}
+  .kpi{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:14px;padding:16px 16px 14px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(30,41,59,.06)}
+  .kpi .lbl{color:var(--muted);font-size:12.5px;font-weight:600}
+  .kpi .val{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-1px}
+  .kpi .val small{font-size:14px;font-weight:600;color:var(--muted);margin-left:3px}
+  .kpi.hl .val{color:var(--gold)}
+  .kpi .bar{position:absolute;left:0;top:0;height:4px;width:100%;background:var(--gold);opacity:.85}
+
+  .section-title{font-size:15px;font-weight:700;color:var(--muted);margin:6px 0 14px;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:"";width:4px;height:16px;background:var(--gold);border-radius:2px}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:30px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .card.unwritten{background:repeating-linear-gradient(135deg,#fbfcfe,#fbfcfe 12px,#f5f7fb 12px,#f5f7fb 24px)}
+  .card .hd{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+  .card .hd .name{font-size:19px;font-weight:800;display:flex;align-items:center;gap:9px}
+  .card .hd .dot{width:12px;height:12px;border-radius:50%}
+  .card .hd .rate{font-size:15px;font-weight:700}
+  .card .body{padding:16px 18px 18px;display:grid;grid-template-columns:130px 1fr;gap:16px}
+  .ubody{padding:40px 18px;text-align:center;color:#94a3b8;font-size:15px;font-weight:700;
+    display:flex;flex-direction:column;gap:6px;flex:1;justify-content:center}
+  .ubody .u2{font-size:12px;font-weight:600;color:#a9b4c6}
+  .chartbox{position:relative;height:130px;display:flex;align-items:center;justify-content:center}
+  .chartbox .ctr{position:absolute;text-align:center}
+  .chartbox .ctr .p{font-size:22px;font-weight:800}
+  .chartbox .ctr .t{font-size:11px;color:var(--muted)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center}
+  .stat .n{font-size:20px;font-weight:800;line-height:1.1}
+  .stat .k{font-size:11px;color:var(--muted);margin-top:3px}
+  .stat.jae .n{color:#334155}
+  .stat.chul .n{color:var(--good)}
+  .stat.gyeol .n{color:var(--warn)}
+  .stat.jang .n{color:var(--bad)}
+  .stat.new .n{color:var(--gold)}
+  .stat.tea .n{color:#3f76c4}
+  .meta{grid-column:1/3;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px;display:grid;grid-template-columns:1fr;gap:8px;font-size:13px}
+  .meta .row{display:flex;gap:8px}
+  .meta .row .mk{color:var(--muted);min-width:44px;font-weight:600}
+  .meta .row .mv{flex:1}
+  .fin{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .fin b{color:var(--txt);font-weight:700}
+
+  .btm{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px;align-items:stretch}
+  .panelbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 4px rgba(30,41,59,.06);display:flex;flex-direction:column}
+  .panelbox h3{font-size:15px;font-weight:700;margin-bottom:14px}
+  .cmpchart{flex:1;min-height:230px}
+  .absgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:4px;flex:1}
+  .abscol{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 12px;display:flex;flex-direction:column}
+  .abscol.uw{align-items:center;justify-content:center;color:#94a3b8;font-size:13px;font-weight:700;text-align:center}
+  .abscol .t{font-size:14px;font-weight:800;margin-bottom:6px;text-align:center;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .ablines{flex:1;display:flex;flex-direction:column;justify-content:space-around}
+  .absline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:5px 2px}
+  .absline b{color:var(--txt);font-size:15px}
+  .absline.lt{border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}
+  .absline.lt b{color:var(--bad)}
+
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:20px;box-shadow:0 1px 4px rgba(30,41,59,.06)}
+  .notes h3{font-size:15px;font-weight:700;margin-bottom:14px}
+  .noteGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .noteDept{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .noteDept .nhd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;padding-bottom:8px;margin-bottom:9px;border-bottom:1px solid var(--line)}
+  .noteDept .nhd .dot{width:10px;height:10px;border-radius:50%}
+  .noteDept ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .noteDept li{font-size:12.5px;line-height:1.45;padding-left:14px;position:relative;color:#334155}
+  .noteDept li::before{content:"▪";position:absolute;left:0;top:0;color:var(--mk)}
+  .noteDept li.uw{color:#94a3b8;font-weight:600}
+  .noteDept li.uw::before{color:#94a3b8}
+  .vcbar{border-top:1px solid var(--line);margin-top:24px;padding-top:16px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .vcbox{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 16px;box-shadow:0 1px 3px rgba(30,41,59,.06)}
+  .vcemo{font-size:15px}
+  .vclbl{font-size:13.5px;font-weight:700;color:#334155}
+  .vcsep{width:1px;height:14px;background:var(--line);display:inline-block}
+  .vcm{font-size:13px;color:var(--muted)}
+  .vcm b{font-weight:800;font-size:14px}
+  #vcToday{color:var(--gold)} #vcTotal{color:#334155}
+  .vcdot{color:#cbd5e1}
+  .vcbtn{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:9px 15px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;box-shadow:0 1px 3px rgba(30,41,59,.06);transition:background .15s}
+  .vcbtn:hover{background:#eef1f7}
+  .vcbtn svg{width:15px;height:15px}
+  .vcbtn.spin svg{animation:vcspin .6s linear}
+  @keyframes vcspin{to{transform:rotate(360deg)}}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:14px}
+  @media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}.grid,.btm{grid-template-columns:1fr}.noteGrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>교육부서 주간 <span>현황 대시보드</span></h1>
+      <div class="sub">송탄영광교회 교육부서 주간 사역 현황</div>
+    </div>
+    <div class="hright">
+      <div class="date">
+        <div class="dnav">
+          <button id="prevBtn" class="navbtn" title="지난주 보기">&#8249;</button>
+          <div class="dbox" id="dateBox" title="주차 선택">
+            <div class="d"><span id="dBig">—</span><span class="caret">&#9662;</span></div>
+            <div class="w" id="dSub"></div>
+            <div class="wkmenu" id="wkMenu"></div>
+          </div>
+          <button id="nextBtn" class="navbtn" title="다음주 보기">&#8250;</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="warnbar" id="warnbar"></div>
+
+  <div class="summary">
+    <div class="kpi"><div class="bar"></div><div class="lbl">전체 재적</div><div class="val"><span id="kJae">–</span><small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--good)"></div><div class="lbl">전체 출석</div><div class="val"><span id="kChul">–</span><small>명</small></div></div>
+    <div class="kpi hl"><div class="bar"></div><div class="lbl">전체 출석률</div><div class="val"><span id="kRate">–</span><small>%</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--warn)"></div><div class="lbl">결석 / 장기결석</div><div class="val"><span id="kGyeol">–</span><small>·<span id="kJang">–</span>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:var(--gold)"></div><div class="lbl">새친구</div><div class="val"><span id="kNew">–</span><small>명</small></div></div>
+    <div class="kpi"><div class="bar" style="background:#7fd1c0"></div><div class="lbl">금주 헌금</div><div class="val"><span id="kMan">–</span><small>만원</small></div></div>
+  </div>
+
+  <div class="section-title">부서별 현황</div>
+  <div class="grid" id="deptGrid"></div>
+
+  <div class="btm">
+    <div class="panelbox reveal"><h3>부서별 출석 인원 <small style="font-weight:500;color:#94a3b8;font-size:12px">연한 막대 = 재적</small></h3><div class="cmpchart"><canvas id="cmpChart"></canvas></div></div>
+    <div class="panelbox reveal"><h3>주차별 결석 인원</h3><div class="absgrid" id="absGrid"></div></div>
+  </div>
+
+  <div class="notes reveal"><h3>주요 사항 · 특이사항</h3><div class="noteGrid" id="noteGrid"></div></div>
+
+  <div class="vcbar">
+    <div class="vcbox">
+      <span class="vcemo">👥</span><span class="vclbl">방문자</span>
+      <span class="vcsep"></span>
+      <span class="vcm">Today <b id="vcToday">–</b></span><span class="vcdot">·</span>
+      <span class="vcm">Total <b id="vcTotal">–</b></span>
+    </div>
+    <button class="vcbtn" id="refreshBtn" title="데이터 새로고침 (방문자 수는 증가하지 않습니다)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>새로고침
+    </button>
+  </div>
+  <footer id="foot">자료 불러오는 중…</footer>
+</div>
+
+<script>
+const COMMITTEE_FROM = '260601';  // 2026년 6월 이후 주차만
+let manifest = [], cur = 0, charts = [], io = null;
+const cache = {};
+const $ = id => document.getElementById(id);
+
+async function jget(u){ const r = await fetch(u, {cache:'no-store'}); if(!r.ok) throw new Error('load fail '+u); return r.json(); }
+
+// 상단 KPI 숫자 카운트업(약 1.4초, ease-out) — 카드별로 조금씩 시차를 두고 올라간다
+const cuTimers = [];
+function countUp(el, target, dec, delay){
+  if(!el) return;
+  const t = Number(target) || 0, dur = 1400;
+  const fmt = v => dec ? v.toFixed(dec) : String(Math.round(v));
+  // 탭이 백그라운드면 애니메이션 프레임이 멈추므로 곧바로 최종값을 넣는다
+  if(document.hidden){ el.textContent = fmt(t); return; }
+  el.textContent = fmt(0);
+  cuTimers.push(setTimeout(function(){
+    const t0 = performance.now();
+    (function step(now){
+      const p = Math.min((now - t0) / dur, 1);
+      el.textContent = fmt(t * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(step); else el.textContent = fmt(t);
+    })(performance.now());
+  }, delay || 0));
+  // 프레임이 지연·정지되어도 최종값은 반드시 표시되도록 보정
+  cuTimers.push(setTimeout(function(){ el.textContent = fmt(t); }, (delay || 0) + dur + 400));
+}
+
+// 화면에 들어오는 요소에 .in 을 붙여 서서히 나타나게 하고, 차트는 그 시점에 생성해 애니메이션이 스크롤과 함께 재생되게 한다.
+function setupObservers(makers){
+  if(io) io.disconnect();
+  io = new IntersectionObserver((ents)=>{
+    ents.forEach(en=>{
+      if(!en.isIntersecting) return;
+      const el = en.target;
+      el.classList.add('in');
+      const mk = makers.get(el);
+      if(mk){ charts.push(mk()); makers.delete(el); }
+      io.unobserve(el);
+    });
+  }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+}
+
+function render(week){
+  charts.forEach(c=>{ try{c.destroy();}catch(e){} }); charts = [];
+  cuTimers.splice(0).forEach(clearTimeout);
+  const depts = week.depts.map(d=>Object.assign({}, d, {written: d.written!==false}));
+  depts.forEach(d=> d.rate = (d.written && d.jae) ? Math.round(d.chul/d.jae*1000)/10 : null);
+  const uset = new Set(depts.filter(d=>!d.written).map(d=>d.name));
+  const w = depts.filter(d=>d.written);
+  const sum = k => w.reduce((a,d)=>a+(+d[k]||0),0);
+  const tJae=sum('jae'), tChul=sum('chul'), tGyeol=sum('gyeol'), tJang=sum('jang'), tNew=sum('neww');
+  const tRate = tJae ? Math.round(tChul/tJae*1000)/10 : 0;
+  const won = w.reduce((a,d)=>a+(parseInt(String(d.fin.gm).replace(/[^0-9]/g,''))||0),0);
+  const man = Math.round(won/10000);
+
+  $('dBig').textContent = week.date_big;
+  $('dSub').textContent = week.date_sub;
+  document.title = '교육부서 현황 대시보드 · ' + week.date_big;
+  [['kJae',tJae,0,0],['kChul',tChul,0,120],['kRate',tRate,1,240],['kGyeol',tGyeol,0,360],
+   ['kJang',tJang,0,360],['kNew',tNew,0,480],['kMan',man,0,600]]
+    .forEach(function(a){ countUp($(a[0]), a[1], a[2], a[3]); });
+
+  const unwritten = [...uset];
+  const wb = $('warnbar');
+  if(unwritten.length){ wb.classList.add('show'); wb.innerHTML = '⚠ 보고서 미작성 부서: <b>'+unwritten.join(', ')+'</b> · 상단 합계·출석률 비교 수치는 작성완료 부서 기준입니다.'; }
+  else { wb.classList.remove('show'); wb.innerHTML=''; }
+
+  const grid = $('deptGrid'); grid.innerHTML='';
+  depts.forEach((d,i)=>{
+    if(!d.written){
+      grid.insertAdjacentHTML('beforeend', `
+        <div class="card unwritten reveal">
+          <div class="hd"><div class="name"><span class="dot" style="background:#cbd5e1"></span>${d.name}</div><div class="rate" style="color:#94a3b8">미작성</div></div>
+          <div class="ubody"><div>📝 보고서 미작성</div><div class="u2">해당 부서 보고서가 아직 작성 완료되지 않았습니다.</div></div>
+        </div>`);
+      return;
+    }
+    const teaStat = d.tea!==undefined ? `<div class="stat tea"><div class="n">${d.tea}</div><div class="k">교사</div></div>` : `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>`;
+    const extraNew = d.tea!==undefined ? `<div class="stat new"><div class="n">${d.neww}</div><div class="k">새친구</div></div>` : "";
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="card reveal">
+        <div class="hd"><div class="name"><span class="dot" style="background:${d.hex}"></span>${d.name}</div><div class="rate" style="color:${d.hex}">출석률 ${d.rate}%</div></div>
+        <div class="body">
+          <div class="chartbox"><canvas id="c${i}"></canvas><div class="ctr"><div class="p" style="color:${d.hex}">${d.rate}%</div><div class="t">출석 ${d.chul}/${d.jae}</div></div></div>
+          <div class="stats">
+            <div class="stat jae"><div class="n">${d.jae}</div><div class="k">재적</div></div>
+            <div class="stat chul"><div class="n">${d.chul}</div><div class="k">출석</div></div>
+            <div class="stat gyeol"><div class="n">${d.gyeol}</div><div class="k">결석</div></div>
+            <div class="stat jang"><div class="n">${d.jang}</div><div class="k">장기결석</div></div>
+            ${teaStat}${extraNew}
+          </div>
+          <div class="meta">
+            <div class="row"><span class="mk">설교</span><span class="mv">${d.sermon} <span style="color:var(--muted)">(${d.verse})</span></span></div>
+            <div class="row"><span class="mk">사역</span><span class="mv">${d.plan}</span></div>
+            <div class="row"><span class="mk">재정</span><span class="mv"><span class="fin">금주헌금 <b>${d.fin.gm}</b>원 · 총잔액 <b>${d.fin.bal}</b>원</span></span></div>
+          </div>
+        </div>
+      </div>`);
+  });
+
+  // 차트는 화면에 들어올 때 생성되도록 maker 로 등록(스크롤 시 애니메이션 재생)
+  const makers = new Map();
+  depts.forEach((d,i)=>{
+    if(!d.written) return;
+    const host = $('c'+i).closest('.card');
+    makers.set(host, ()=> new Chart($('c'+i),{ type:'doughnut',
+      data:{datasets:[{data:[d.chul, Math.max(d.jae-d.chul,0)], backgroundColor:[d.hex,'#e6eaf2'], borderWidth:0}]},
+      options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{animateRotate:true,duration:900,easing:'easeOutCubic'}} }));
+  });
+
+  const barLabel = { id:'barLabel', afterDatasetsDraw(chart){
+    const ctx=chart.ctx, jm=chart.getDatasetMeta(0), cm=chart.getDatasetMeta(1);
+    cm.data.forEach((bar,i)=>{ const d=depts[i]; ctx.save();
+      ctx.font='700 13px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      if(d.written){
+        ctx.fillStyle=d.hex; ctx.fillText(d.chul+' / '+d.jae+'명', bar.x, jm.data[i].y-6);
+        const h=bar.base-bar.y;
+        if(h>15){ ctx.font=(h>22?'700 12px':'700 11px')+' "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(d.rate+'%', bar.x, bar.y+h/2); }
+      }
+      else { ctx.fillStyle='#94a3b8'; ctx.fillText('미작성', bar.x, chart.scales.y.getPixelForValue(0)-6); }
+      ctx.restore(); });
+  }};
+  const yMax = Math.max(10, Math.ceil(Math.max(...depts.map(d=>d.written?(d.jae||0):0))*1.12/10)*10);
+  const barHost = $('cmpChart').closest('.panelbox');
+  makers.set(barHost, ()=> new Chart($('cmpChart'),{ type:'bar',
+    data:{labels:depts.map(d=>d.name), datasets:[
+      {data:depts.map(d=>d.written?d.jae:0), backgroundColor:depts.map(d=>d.hex+'33'), borderRadius:8, barThickness:44, grouped:false, order:2},
+      {data:depts.map(d=>d.written?d.chul:0), backgroundColor:depts.map(d=>d.written?d.hex:'#dfe4ec'), borderRadius:8, barThickness:44, grouped:false, order:1}]},
+    options:{maintainAspectRatio:false, layout:{padding:{top:18}},
+      animation:{duration:900,easing:'easeOutQuart',delay:(ctx)=> ctx.type==='data'? ctx.dataIndex*120 : 0},
+      plugins:{legend:{display:false}, tooltip:{filter:c=>c.datasetIndex===1, callbacks:{label:c=>{const d=depts[c.dataIndex]; return d.written?('출석 '+d.chul+'명 / 재적 '+d.jae+'명 · 출석률 '+d.rate+'%'):'보고서 미작성';}}}},
+      scales:{y:{beginAtZero:true,max:yMax,ticks:{color:'#64748b',callback:v=>v+'명'},grid:{color:'#e2e7f0'}}, x:{ticks:{color:'#1e293b',font:{weight:'700'}},grid:{display:false}}}},
+    plugins:[barLabel] }));
+
+  setupObservers(makers);
+
+  const ag = $('absGrid'); ag.innerHTML='';
+  week.abs.forEach(a=>{
+    if(uset.has(a.name)){ ag.insertAdjacentHTML('beforeend', `<div class="abscol uw"><div>${a.name}<br>보고서 미작성</div></div>`); return; }
+    ag.insertAdjacentHTML('beforeend', `
+      <div class="abscol"><div class="t">${a.name}</div>
+        <div class="ablines">
+          <div class="absline"><span>1주차</span><b>${a.w[0]}</b></div>
+          <div class="absline"><span>2주차</span><b>${a.w[1]}</b></div>
+          <div class="absline"><span>3주차</span><b>${a.w[2]}</b></div>
+          <div class="absline"><span>4주차</span><b>${a.w[3]}</b></div>
+          <div class="absline lt"><span>장기결석</span><b>${a.jang}</b></div>
+        </div>
+      </div>`);
+  });
+
+  const ng = $('noteGrid'); ng.innerHTML='';
+  week.notes.forEach(d=>{
+    const items = uset.has(d.name) ? `<li class="uw" style="--mk:#94a3b8">보고서 미작성</li>` : d.items.map(t=>`<li style="--mk:${d.hex}">${t}</li>`).join("");
+    ng.insertAdjacentHTML('beforeend', `<div class="noteDept"><div class="nhd"><span class="dot" style="background:${d.hex}"></span><span style="color:${d.hex}">${d.name}</span></div><ul>${items}</ul></div>`);
+  });
+
+  $('foot').textContent = '자료 출처: 교육부서 주간 사역보고서 스프레드시트 (' + week.tab + ' 탭) · 생성일 ' + week.gen_date;
+}
+
+function updateArrows(){
+  $('prevBtn').disabled = (cur >= manifest.length-1);
+  $('nextBtn').disabled = (cur <= 0);
+}
+async function goto(i){
+  if(i<0 || i>=manifest.length) return;
+  cur = i;
+  const tab = manifest[i].tab;
+  if(!cache[tab]) cache[tab] = await jget('week_'+tab+'.json');
+  render(cache[tab]);
+  updateArrows();
+}
+$('prevBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur+1); };  // 왼쪽 = 지난주(더 오래된)
+$('nextBtn').onclick = (e)=>{ e.stopPropagation(); closeMenu(); goto(cur-1); };  // 오른쪽 = 다음주(더 최신)
+
+// 날짜 클릭 → 전체 주차 드롭다운
+function buildMenu(){
+  const m = $('wkMenu');
+  m.innerHTML = '<div class="mhd">주차 선택</div>';
+  manifest.forEach((w,i)=>{
+    const el = document.createElement('div');
+    el.className = 'wkitem' + (i===cur ? ' active' : '');
+    el.innerHTML = `<span class="wi1">${w.date_big}</span><span class="wi2">${w.date_sub||''}</span>`;
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); closeMenu(); goto(i); });
+    m.appendChild(el);
+  });
+}
+function openMenu(){ buildMenu(); $('wkMenu').classList.add('show'); $('dateBox').classList.add('open'); }
+function closeMenu(){ $('wkMenu').classList.remove('show'); $('dateBox').classList.remove('open'); }
+$('dateBox').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  $('wkMenu').classList.contains('show') ? closeMenu() : openMenu();
+});
+$('wkMenu').addEventListener('click', (e)=> e.stopPropagation());
+document.addEventListener('click', ()=> closeMenu());
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeMenu(); });
+
+// 방문자 카운터 (무료 CORS 카운터 Abacus). hit=증가, get=조회만.
+const VC_NS = 'hyele-edu-dashboard-committee';
+function vcDayKey(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return 'day-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate()); }
+function vcShow(today,total){
+  $('vcToday').textContent = (today==null?'–':Number(today).toLocaleString());
+  $('vcTotal').textContent = (total==null?'–':Number(total).toLocaleString());
+}
+async function vcCall(mode){  // 'hit'(증가) | 'get'(조회)
+  const base='https://abacus.jasoncameron.dev/'+mode+'/'+VC_NS+'/';
+  try{
+    const [t,dd] = await Promise.all([
+      fetch(base+'total').then(r=>r.json()),
+      fetch(base+vcDayKey()).then(r=>r.json())
+    ]);
+    vcShow(dd.value, t.value);
+  }catch(e){ vcShow(null,null); }
+}
+function initVisitor(){
+  // 접속 시 세션당 1회만 증가. 새로고침/재렌더는 증가하지 않음.
+  if(sessionStorage.getItem('edu_vc_done_cm')){ vcCall('get'); }
+  else { sessionStorage.setItem('edu_vc_done_cm','1'); vcCall('hit'); }
+}
+
+// 새로고침 버튼: 방문자 수는 그대로 두고, 데이터 캐시만 새로 받아 다시 그린다.
+async function refreshData(){
+  const b=$('refreshBtn'); b.classList.add('spin'); setTimeout(()=>b.classList.remove('spin'),650);
+  const prevTab = manifest[cur] ? manifest[cur].tab : null;
+  for(const k in cache) delete cache[k];
+  try{
+    manifest = await jget('manifest.json');
+    manifest = manifest.filter(w=> w.tab >= COMMITTEE_FROM); manifest.sort((a,b)=> a.tab<b.tab?1:-1);
+    let idx = 0;
+    if(prevTab){ const j = manifest.findIndex(w=>w.tab===prevTab); if(j>=0) idx=j; }
+    await goto(idx);
+    vcCall('get');   // 조회만 (증가 없음)
+  }catch(e){ $('foot').textContent = '새로고침 실패: ' + e.message; }
+}
+$('refreshBtn').onclick = refreshData;
+
+(async ()=>{
+  try{
+    manifest = await jget('manifest.json');
+    manifest = manifest.filter(w=> w.tab >= COMMITTEE_FROM); manifest.sort((a,b)=> a.tab<b.tab?1:-1);  // 최신 먼저
+    await goto(0);
+    initVisitor();
+  }catch(e){
+    $('foot').textContent = '데이터를 불러오지 못했습니다: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>
