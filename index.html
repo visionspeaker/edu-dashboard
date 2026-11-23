@@ -480,15 +480,16 @@ $('refreshBtn').onclick = refreshData;
 })();
 
 // 앱 복귀 자동 새로고침: 1분 이상 뒤로 가 있다가 다시 보이면 데이터를 새로 받아 최신 주차로 다시 그린다(방문자 수 증가 없음).
-// 하루 강제 새로고침: 마지막으로 페이지를 완전히 불러온 지 24시간이 지나면 캐시 없이 페이지 전체를 다시 불러온다.
+// 날짜 기준 강제 새로고침: 마지막으로 페이지를 완전히 불러온 날짜(휴대폰 시계 기준)가 오늘이 아니면 캐시 없이 페이지 전체를 다시 불러온다.
 (function(){
-  const KEY='edu_last_full_load', DAY=24*60*60*1000, AWAY=60*1000;
+  const KEY='edu_last_full_load', AWAY=60*1000;
+  const dayKey=(ms)=>{ const d=new Date(ms); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };  // 휴대폰 로컬 날짜
   const getT=()=>{ try{ return Number(localStorage.getItem(KEY))||0; }catch(e){ return 0; } };
   const setT=()=>{ try{ localStorage.setItem(KEY, String(Date.now())); }catch(e){} };
   setT();  // 지금 페이지를 완전히 불러온 시각
   let hiddenAt=null, busy=false;
   function hardReload(){ const u=new URL(location.href); u.searchParams.set('r', Date.now()); location.replace(u.toString()); }
-  function dayCheck(){ const t=getT(); if(t && Date.now()-t>=DAY){ hardReload(); return true; } return false; }
+  function dayCheck(){ const t=getT(); if(t && dayKey(t)!==dayKey(Date.now())){ hardReload(); return true; } return false; }
   async function toLatest(){
     if(busy) return; busy=true;
     try{
